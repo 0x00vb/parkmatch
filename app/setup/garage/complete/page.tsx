@@ -1,13 +1,27 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 
 export default function GarageCompleteePage() {
   const router = useRouter();
+  const { data: session } = useSession();
 
   const handleContinue = () => {
-    // Redirect to main dashboard (not implemented yet)
+    // Check if this is a conductor y propietario who should continue to vehicles
+    if (session?.user?.role === "CONDUCTOR") {
+      // Check if they came from the setup flow and should continue to vehicles
+      const urlParams = new URLSearchParams(window.location.search);
+      const shouldContinueToVehicles = urlParams.get('next') === 'vehicles';
+
+      if (shouldContinueToVehicles) {
+        router.push("/setup/vehicles?from=garage");
+        return;
+      }
+    }
+
+    // Default: redirect to main dashboard
     router.push("/dashboard");
   };
 

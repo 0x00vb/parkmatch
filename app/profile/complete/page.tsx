@@ -58,9 +58,11 @@ export default function CompleteProfilePage() {
         });
 
         // Redirect based on user role
-        if (session.user.role === "CONDUCTOR_PROPIETARIO") {
-          router.push("/setup/vehicles");
+        if (session.user.role === "CONDUCTOR") {
+          // Conductor y Propietario: primero cochera, luego vehículos
+          router.push("/setup/garage?next=vehicles");
         } else {
+          // Solo Propietario: solo cochera
           router.push("/setup/garage");
         }
       } else {

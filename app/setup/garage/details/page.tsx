@@ -23,6 +23,7 @@ type GarageDetailsForm = z.infer<typeof garageDetailsSchema>;
 
 export default function GarageDetailsPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [nextStep, setNextStep] = useState<string | null>(null);
   const router = useRouter();
 
   const {
@@ -56,6 +57,10 @@ export default function GarageDetailsPage() {
     if (!locationData) {
       router.push("/setup/garage");
     }
+    
+    // Get next step info
+    const nextStepData = sessionStorage.getItem("garageNextStep");
+    setNextStep(nextStepData);
   }, [router]);
 
   const onSubmit = async (data: GarageDetailsForm) => {
@@ -68,6 +73,16 @@ export default function GarageDetailsPage() {
       alert("Error al guardar los detalles");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    if (nextStep === "vehicles") {
+      // Skip garage setup and go to vehicles
+      router.push("/setup/vehicles?from=garage");
+    } else {
+      // Skip garage setup and go to completion
+      router.push("/setup/complete");
     }
   };
 
@@ -272,14 +287,27 @@ export default function GarageDetailsPage() {
               />
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 mt-8"
-            >
-              {isLoading ? "Guardando..." : "Siguiente"}
-            </button>
+            {/* Action Buttons */}
+            <div className="space-y-3 mt-8">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? "Guardando..." : "Siguiente"}
+              </button>
+              
+              {/* Skip Button - only show if part of conductor y propietario flow */}
+              {nextStep && (
+                <button
+                  type="button"
+                  onClick={handleSkip}
+                  className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+                >
+                  Omitir por ahora
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </div>

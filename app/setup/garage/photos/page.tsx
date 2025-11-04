@@ -15,6 +15,7 @@ export default function GaragePhotosPage() {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [nextStep, setNextStep] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -25,6 +26,10 @@ export default function GaragePhotosPage() {
     if (!locationData || !detailsData) {
       router.push("/setup/garage");
     }
+    
+    // Get next step info
+    const nextStepData = sessionStorage.getItem("garageNextStep");
+    setNextStep(nextStepData);
   }, [router]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,11 +119,21 @@ export default function GaragePhotosPage() {
       });
 
       if (response.ok) {
+        // Check next step before clearing session storage
+        const shouldContinueToVehicles = nextStep === "vehicles";
+
         // Clear session storage
         sessionStorage.removeItem("garageLocation");
         sessionStorage.removeItem("garageDetails");
-        
-        router.push("/setup/garage/complete");
+        sessionStorage.removeItem("garageNextStep");
+
+        if (shouldContinueToVehicles) {
+          // Continue to vehicles setup
+          router.push("/setup/vehicles?from=garage");
+        } else {
+          // Go directly to registration completion (skip success screen)
+          router.push("/setup/complete");
+        }
       } else {
         alert("Error al crear la cochera");
       }
@@ -126,6 +141,16 @@ export default function GaragePhotosPage() {
       alert("Error al crear la cochera");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    if (nextStep === "vehicles") {
+      // Skip garage setup and go to vehicles
+      router.push("/setup/vehicles?from=garage");
+    } else {
+      // Skip garage setup and go to completion
+      router.push("/setup/complete");
     }
   };
 
@@ -243,14 +268,27 @@ export default function GaragePhotosPage() {
             </ul>
           </div>
 
-          {/* Continue Button */}
-          <button
-            onClick={handleContinue}
-            disabled={images.length === 0 || isLoading || isUploading}
-            className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Creando cochera..." : "Siguiente"}
-          </button>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleContinue}
+              disabled={images.length === 0 || isLoading || isUploading}
+              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Creando cochera..." : "Siguiente"}
+            </button>
+            
+            {/* Skip Button - only show if part of conductor y propietario flow */}
+            {nextStep && (
+              <button
+                onClick={handleSkip}
+                disabled={isLoading || isUploading}
+                className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Omitir por ahora
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

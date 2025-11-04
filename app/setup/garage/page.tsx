@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader } from "@googlemaps/js-api-loader";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { LatLng, Icon } from "leaflet";
+import axios from "axios";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 import ProgressBar from "@/components/ui/ProgressBar";
+import "leaflet/dist/leaflet.css";
 
 interface LocationData {
   address: string;
@@ -22,136 +25,188 @@ export default function GarageLocationPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
-  
-  const mapRef = useRef<HTMLDivElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
+  const [nextStep, setNextStep] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
+
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   
   const router = useRouter();
-
+  
+  // Check if this is part of the conductor y propietario flow
+  
   useEffect(() => {
-    initializeMap();
+    const urlParams = new URLSearchParams(window.location.search);
+    setNextStep(urlParams.get('next'));
   }, []);
 
-  const initializeMap = async () => {
+  useEffect(() => {
+    setMapLoaded(true);
+  }, []);
+
+  // Función para buscar direcciones usando Nominatim
+  const searchAddress = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
     try {
-      const loader = new Loader({
-        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "demo-key",
-        version: "weekly",
-        libraries: ["places", "geometry"],
+      const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: {
+          q: query + ', Argentina',
+          format: 'json',
+          limit: 5,
+          countrycodes: 'AR',
+          addressdetails: 1,
+        },
+        headers: {
+          'User-Agent': 'ParkMatch/1.0'
+        }
       });
 
-      await loader.load();
-      
-      if (mapRef.current) {
-        // Initialize map
-        const map = new google.maps.Map(mapRef.current, {
-          center: { lat: locationData.latitude, lng: locationData.longitude },
-          zoom: 15,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        });
-
-        mapInstanceRef.current = map;
-
-        // Initialize marker
-        const marker = new google.maps.Marker({
-          position: { lat: locationData.latitude, lng: locationData.longitude },
-          map: map,
-          draggable: true,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: "#10B981",
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 3,
-            scale: 8,
-          },
-        });
-
-        markerRef.current = marker;
-
-        // Initialize autocomplete
-        if (addressInputRef.current) {
-          const autocomplete = new google.maps.places.Autocomplete(
-            addressInputRef.current,
-            {
-              types: ["address"],
-              componentRestrictions: { country: "AR" },
-              fields: ["formatted_address", "geometry", "address_components"],
-            }
-          );
-
-          autocompleteRef.current = autocomplete;
-
-          autocomplete.addListener("place_changed", () => {
-            const place = autocomplete.getPlace();
-            if (place.geometry?.location) {
-              const lat = place.geometry.location.lat();
-              const lng = place.geometry.location.lng();
-              
-              // Extract city from address components
-              let city = "Ciudad Autónoma de Buenos Aires";
-              if (place.address_components) {
-                const cityComponent = place.address_components.find(
-                  component => component.types.includes("locality") || 
-                              component.types.includes("administrative_area_level_1")
-                );
-                if (cityComponent) {
-                  city = cityComponent.long_name;
-                }
-              }
-
-              setLocationData({
-                address: place.formatted_address || "",
-                city,
-                latitude: lat,
-                longitude: lng,
-              });
-
-              // Update map and marker
-              map.setCenter({ lat, lng });
-              marker.setPosition({ lat, lng });
-            }
-          });
-        }
-
-        // Handle marker drag
-        marker.addListener("dragend", () => {
-          const position = marker.getPosition();
-          if (position) {
-            const lat = position.lat();
-            const lng = position.lng();
-            
-            setLocationData(prev => ({
-              ...prev,
-              latitude: lat,
-              longitude: lng,
-            }));
-
-            // Reverse geocoding to get address
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-              if (status === "OK" && results?.[0] && addressInputRef.current) {
-                addressInputRef.current.value = results[0].formatted_address;
-                setLocationData(prev => ({
-                  ...prev,
-                  address: results[0].formatted_address,
-                }));
-              }
-            });
-          }
-        });
-
-        setMapLoaded(true);
-      }
+      setSearchResults(response.data);
+      setShowResults(true);
     } catch (error) {
-      console.error("Error loading Google Maps:", error);
+      console.error('Error searching address:', error);
+      setSearchResults([]);
     }
   };
+
+  // Función para geocoding inverso usando Nominatim
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+        params: {
+          lat,
+          lon: lng,
+          format: 'json',
+          addressdetails: 1,
+        },
+        headers: {
+          'User-Agent': 'ParkMatch/1.0'
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      return null;
+    }
+  };
+
+  // Función para manejar selección de dirección
+  const handleAddressSelect = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+
+    // Extraer ciudad de la respuesta
+    let city = "Ciudad Autónoma de Buenos Aires";
+    if (result.address) {
+      if (result.address.city) {
+        city = result.address.city;
+      } else if (result.address.town) {
+        city = result.address.town;
+      } else if (result.address.village) {
+        city = result.address.village;
+      } else if (result.address.state) {
+        city = result.address.state;
+      }
+    }
+
+    setLocationData({
+      address: result.display_name,
+      city,
+      latitude: lat,
+      longitude: lng,
+    });
+
+    // Actualizar marcador
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lng]);
+    }
+
+    // Centrar mapa
+    if (mapRef.current) {
+      mapRef.current.setView([lat, lng], 15);
+    }
+
+    setShowResults(false);
+    if (addressInputRef.current) {
+      addressInputRef.current.value = result.display_name;
+    }
+  };
+
+  // Función para manejar movimiento del marcador
+  const handleMarkerDrag = async (event: any) => {
+    const { lat, lng } = event.target.getLatLng();
+
+    setLocationData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+    }));
+
+    // Geocoding inverso para obtener dirección
+    const result = await reverseGeocode(lat, lng);
+    if (result && addressInputRef.current) {
+      addressInputRef.current.value = result.display_name;
+      setLocationData(prev => ({
+        ...prev,
+        address: result.display_name,
+      }));
+    }
+  };
+
+  // Componente para el mapa con eventos
+  const MapComponent = () => {
+    const map = useMapEvents({
+      click: (e) => {
+        const { lat, lng } = e.latlng;
+        setLocationData(prev => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+        }));
+
+        if (markerRef.current) {
+          markerRef.current.setLatLng([lat, lng]);
+        }
+
+        // Geocoding inverso
+        reverseGeocode(lat, lng).then(result => {
+          if (result && addressInputRef.current) {
+            addressInputRef.current.value = result.display_name;
+            setLocationData(prev => ({
+              ...prev,
+              address: result.display_name,
+            }));
+          }
+        });
+      },
+    });
+
+    useEffect(() => {
+      mapRef.current = map;
+    }, [map]);
+
+    return null;
+  };
+
+  // Crear ícono personalizado para el marcador
+  const customIcon = new Icon({
+    iconUrl: "data:image/svg+xml;base64," + btoa(`
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" fill="#10B981" stroke="white" stroke-width="3"/>
+      </svg>
+    `),
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
 
   const handleContinue = () => {
     if (!locationData.address.trim()) {
@@ -161,7 +216,21 @@ export default function GarageLocationPage() {
 
     // Store location data in sessionStorage for next step
     sessionStorage.setItem("garageLocation", JSON.stringify(locationData));
+    // Store next step info
+    if (nextStep) {
+      sessionStorage.setItem("garageNextStep", nextStep);
+    }
     router.push("/setup/garage/details");
+  };
+
+  const handleSkip = () => {
+    if (nextStep === "vehicles") {
+      // Skip garage setup and go to vehicles
+      router.push("/setup/vehicles?from=garage");
+    } else {
+      // Skip garage setup and go to completion
+      router.push("/setup/complete");
+    }
   };
 
   return (
@@ -194,7 +263,7 @@ export default function GarageLocationPage() {
           </div>
 
           {/* Address Input */}
-          <div className="mb-4">
+          <div className="mb-4 relative">
             <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
               Dirección
             </label>
@@ -205,9 +274,34 @@ export default function GarageLocationPage() {
                 id="address"
                 placeholder="Ej: Av. Corrientes 1234"
                 className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(e) => searchAddress(e.target.value)}
+                onBlur={() => setTimeout(() => setShowResults(false), 200)}
+                onFocus={() => {
+                  if (searchResults.length > 0) setShowResults(true);
+                }}
               />
               <MapPinIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             </div>
+
+            {/* Search Results Dropdown */}
+            {showResults && searchResults.length > 0 && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                {searchResults.map((result, index) => (
+                  <button
+                    key={index}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+                    onClick={() => handleAddressSelect(result)}
+                  >
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {result.display_name.split(',')[0]}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {result.display_name}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* City Input */}
@@ -234,8 +328,36 @@ export default function GarageLocationPage() {
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Confirmar en el mapa</h3>
             <div className="w-full h-48 bg-gray-200 rounded-xl overflow-hidden relative">
-              <div ref={mapRef} className="w-full h-full" />
-              {!mapLoaded && (
+              {mapLoaded ? (
+                <MapContainer
+                  center={[locationData.latitude, locationData.longitude]}
+                  zoom={15}
+                  style={{ height: '100%', width: '100%' }}
+                  zoomControl={false}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <MapComponent />
+                  <Marker
+                    position={[locationData.latitude, locationData.longitude]}
+                    icon={customIcon}
+                    draggable={true}
+                    eventHandlers={{
+                      dragend: handleMarkerDrag,
+                    }}
+                    ref={markerRef}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <strong>Tu ubicación</strong><br />
+                        {locationData.address}
+                      </div>
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
@@ -245,18 +367,28 @@ export default function GarageLocationPage() {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Podés arrastrar el marcador para ajustar la ubicación exacta
+              Podés arrastrar el marcador o hacer clic en el mapa para ajustar la ubicación exacta
             </p>
           </div>
 
-          {/* Continue Button */}
-          <button
-            onClick={handleContinue}
-            disabled={!locationData.address.trim() || isLoading}
-            className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Cargando..." : "Siguiente"}
-          </button>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleContinue}
+              disabled={!locationData.address.trim() || isLoading}
+              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Cargando..." : "Siguiente"}
+            </button>
+            
+            {/* Skip Button - allow users to skip garage setup */}
+            <button
+              onClick={handleSkip}
+              className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+            >
+              Omitir por ahora
+            </button>
+          </div>
         </div>
       </div>
     </div>

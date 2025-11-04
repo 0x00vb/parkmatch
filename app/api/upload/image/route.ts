@@ -8,19 +8,23 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+console.log(process.env.CLOUDINARY_CLOUD_NAME);
+console.log(process.env.CLOUDINARY_API_KEY);
+console.log(process.env.CLOUDINARY_API_SECRET);                                                                                                                               
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json(
+      return NextResponse.json(                                                                                                     
         { message: "No se encontró archivo" },
         { status: 400 }
       );
     }
 
-    // Convert file to buffer
+    // Convert file to buffer                                                                           
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
@@ -28,7 +32,7 @@ export async function POST(request: NextRequest) {
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {
-          folder: "parkmatch/garages",
+          folder: "garages",
           resource_type: "image",
           transformation: [
             { width: 800, height: 600, crop: "limit" },

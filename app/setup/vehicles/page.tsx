@@ -29,11 +29,18 @@ export default function VehicleManagementPage() {
     coveredOnly: false,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [showSkipOption, setShowSkipOption] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
 
   useEffect(() => {
     fetchVehicles();
+    
+    // Check if we should show skip option (when coming from garage flow or initial setup)
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromGarage = urlParams.get('from') === 'garage';
+    const isInitialSetup = window.location.pathname.includes('/setup/');
+    setShowSkipOption(fromGarage || isInitialSetup);
   }, []);
 
   const fetchVehicles = async () => {
@@ -81,6 +88,10 @@ export default function VehicleManagementPage() {
     } catch (error) {
       alert("Error al guardar las preferencias");
     }
+  };
+
+  const handleSkip = () => {
+    router.push("/setup/complete");
   };
 
   if (isLoading) {
@@ -248,13 +259,25 @@ export default function VehicleManagementPage() {
             </div>
           </div>
 
-          {/* Continue Button */}
-          <button
-            onClick={handleContinue}
-            className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors"
-          >
-            Continuar
-          </button>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleContinue}
+              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors"
+            >
+              Continuar
+            </button>
+            
+            {/* Skip Button - show during setup flow */}
+            {showSkipOption && (
+              <button
+                onClick={handleSkip}
+                className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+              >
+                Omitir por ahora
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
