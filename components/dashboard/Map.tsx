@@ -123,13 +123,6 @@ function MapComponent({ center, zoom, parkingSpots, garages, onMapReady, onGarag
           key={`garage-${garage.id}`}
           position={[garage.latitude, garage.longitude] as LatLngExpression}
           icon={garageIcon}
-          eventHandlers={{
-            click: () => {
-              if (onGarageClick) {
-                onGarageClick(garage.id);
-              }
-            }
-          }}
         >
           <Popup>
             <div className="text-sm max-w-48">

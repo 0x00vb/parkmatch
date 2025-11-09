@@ -245,41 +245,6 @@ export default function InicioSection() {
     }
   };
 
-  // Mock data for parking spots for now - will be replaced with API call later
-  useEffect(() => {
-    const mockSpots: ParkingSpot[] = [
-      {
-        id: "1",
-        latitude: -34.6037,
-        longitude: -58.3816,
-        address: "Av. Corrientes 1234",
-        type: "COVERED",
-        price: 500,
-        available: true,
-      },
-      {
-        id: "2",
-        latitude: -34.6047,
-        longitude: -58.3826,
-        address: "Av. Santa Fe 5678",
-        type: "UNCOVERED",
-        price: 300,
-        available: true,
-      },
-      {
-        id: "3",
-        latitude: -34.6027,
-        longitude: -58.3806,
-        address: "Av. Rivadavia 9012",
-        type: "COVERED",
-        price: 450,
-        available: false,
-      },
-    ];
-    setParkingSpots(mockSpots);
-    setFilteredParkingSpots(mockSpots);
-  }, []);
-
   // Memoizar resultados filtrados por proximidad para mejor performance
   const { filteredGarages: memoizedFilteredGarages, filteredParkingSpots: memoizedFilteredParkingSpots } = useMemo(() => {
     if (!selectedLocation) {
