@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
@@ -8,8 +8,16 @@ import {
   AdjustmentsHorizontalIcon,
   PlusIcon,
   MinusIcon,
-  MapPinIcon
+  MapPinIcon,
+  XMarkIcon
 } from "@heroicons/react/24/outline";
+import DebouncedInput from "@/components/ui/DebouncedInput";
+import {
+  calculateDistance,
+  filterByRadius,
+  sortByDistance,
+  Coordinates
+} from "@/lib/geo";
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import("./Map"), {
@@ -58,15 +66,42 @@ interface Garage {
   };
 }
 
+interface GeocodingResult {
+  lat: number;
+  lng: number;
+  displayName: string;
+  address: {
+    houseNumber?: string;
+    road?: string;
+    suburb?: string;
+    city?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
+}
+
+interface SearchSuggestion {
+  result: GeocodingResult;
+  distance?: number;
+}
+
 export default function InicioSection() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
   const [garages, setGarages] = useState<Garage[]>([]);
+  const [filteredGarages, setFilteredGarages] = useState<Garage[]>([]);
+  const [filteredParkingSpots, setFilteredParkingSpots] = useState<ParkingSpot[]>([]);
   const [mapCenter, setMapCenter] = useState({ lat: -34.6037, lng: -58.3816 }); // Buenos Aires
   const [zoom, setZoom] = useState(13);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<GeocodingResult | null>(null);
 
   // Load garages from API
   useEffect(() => {
@@ -119,13 +154,127 @@ export default function InicioSection() {
       },
     ];
     setParkingSpots(mockSpots);
+    setFilteredParkingSpots(mockSpots);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement search functionality
-    console.log("Searching for:", searchQuery);
-  };
+  // Memoizar resultados filtrados por proximidad para mejor performance
+  const { filteredGarages: memoizedFilteredGarages, filteredParkingSpots: memoizedFilteredParkingSpots } = useMemo(() => {
+    if (!selectedLocation) {
+      return {
+        filteredGarages: garages,
+        filteredParkingSpots: parkingSpots,
+      };
+    }
+
+    const searchLocation: Coordinates = {
+      lat: selectedLocation.lat,
+      lng: selectedLocation.lng,
+    };
+
+    // Optimización: usar distancia aproximada para filtrado inicial (más rápido)
+    const nearbyGarages = filterByRadius(garages, searchLocation, 5);
+    const nearbyParkingSpots = filterByRadius(parkingSpots, searchLocation, 5);
+
+    // Ordenar por distancia aproximada para mejor UX
+    const sortedGarages = sortByDistance(nearbyGarages, searchLocation);
+    const sortedParkingSpots = sortByDistance(nearbyParkingSpots, searchLocation);
+
+    return {
+      filteredGarages: sortedGarages,
+      filteredParkingSpots: sortedParkingSpots,
+    };
+  }, [selectedLocation, garages, parkingSpots]);
+
+  // Actualizar estado filtrado cuando cambian los resultados memoizados
+  useEffect(() => {
+    setFilteredGarages(memoizedFilteredGarages);
+    setFilteredParkingSpots(memoizedFilteredParkingSpots);
+  }, [memoizedFilteredGarages, memoizedFilteredParkingSpots]);
+
+  // Centrar mapa cuando se selecciona una ubicación
+  useEffect(() => {
+    if (selectedLocation) {
+      setMapCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng });
+      setZoom(14);
+    } else {
+      // Resetear a vista general
+      setMapCenter({ lat: -34.6037, lng: -58.3816 });
+      setZoom(13);
+    }
+  }, [selectedLocation]);
+
+  // Buscar sugerencias de geocoding cuando cambia la búsqueda debounced
+  useEffect(() => {
+    const searchLocations = async () => {
+      if (!debouncedSearchQuery.trim() || debouncedSearchQuery.length < 3) {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const response = await fetch(
+          `/api/geocoding?q=${encodeURIComponent(debouncedSearchQuery)}&limit=5`
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const suggestions: SearchSuggestion[] = data.results.map((result: GeocodingResult) => ({
+            result,
+            distance: undefined, // Se calculará si es necesario
+          }));
+          setSearchSuggestions(suggestions);
+          setShowSuggestions(true);
+        } else {
+          console.error('Error fetching geocoding results:', response.statusText);
+          setSearchSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error searching locations:', error);
+        setSearchSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    searchLocations();
+  }, [debouncedSearchQuery]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+  }, []);
+
+  const handleDebouncedSearchChange = useCallback((value: string) => {
+    setDebouncedSearchQuery(value);
+  }, []);
+
+  const handleSelectSuggestion = useCallback((suggestion: SearchSuggestion) => {
+    setSelectedLocation(suggestion.result);
+    setSearchQuery(suggestion.result.displayName);
+    setShowSuggestions(false);
+    setDebouncedSearchQuery(""); // Limpiar para evitar nuevas búsquedas
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery("");
+    setDebouncedSearchQuery("");
+    setSelectedLocation(null);
+    setSearchSuggestions([]);
+    setShowSuggestions(false);
+    // Resetear mapa a vista general
+    setMapCenter({ lat: -34.6037, lng: -58.3816 });
+    setZoom(13);
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && searchSuggestions.length > 0) {
+      e.preventDefault();
+      handleSelectSuggestion(searchSuggestions[0]);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
+  }, [searchSuggestions, handleSelectSuggestion]);
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(prev + 1, 20));
@@ -184,18 +333,71 @@ export default function InicioSection() {
     <div className="flex flex-col h-screen">
       {/* Search Header */}
       <div className="bg-white p-4 shadow-sm shrink-0">
-        <form onSubmit={handleSearch} className="mb-4">
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar dirección, barrio o punto de interés"
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-        </form>
+        <div className="mb-4 relative">
+          <DebouncedInput
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onDebouncedChange={handleDebouncedSearchChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Buscar dirección, barrio o punto de interés"
+            debounceMs={300}
+            maxLength={200}
+            aria-label="Buscar ubicación"
+            showClearButton={!!selectedLocation}
+          />
+
+          {/* Indicador de ubicación seleccionada */}
+          {selectedLocation && (
+            <div className="absolute right-12 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs text-green-600 font-medium">Seleccionada</span>
+            </div>
+          )}
+
+          {/* Indicador de búsqueda */}
+          {isSearching && (
+            <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
+            </div>
+          )}
+
+          {/* Sugerencias de búsqueda */}
+          {showSuggestions && searchSuggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1">
+              {searchSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelectSuggestion(suggestion)}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+                >
+                  <div className="flex items-start gap-3">
+                    <MapPinIcon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {suggestion.result.displayName}
+                      </div>
+                      {suggestion.result.address.city && (
+                        <div className="text-xs text-gray-500 truncate">
+                          {suggestion.result.address.city}
+                          {suggestion.result.address.state && `, ${suggestion.result.address.state}`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Mensaje cuando no hay resultados */}
+          {showSuggestions && searchSuggestions.length === 0 && !isSearching && debouncedSearchQuery.length >= 3 && (
+            <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 mt-1">
+              <div className="text-sm text-gray-500 text-center">
+                No se encontraron ubicaciones para &quot;{debouncedSearchQuery}&quot;
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Filter Buttons */}
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -223,11 +425,19 @@ export default function InicioSection() {
         <Map
           center={mapCenter}
           zoom={zoom}
-          parkingSpots={parkingSpots}
-          garages={garages}
+          parkingSpots={filteredParkingSpots}
+          garages={filteredGarages}
           onMapReady={() => setMapLoaded(true)}
           onGarageClick={handleGarageClick}
         />
+
+        {/* Overlay para cerrar sugerencias al hacer click fuera */}
+        {showSuggestions && (
+          <div
+            className="absolute inset-0 z-40"
+            onClick={() => setShowSuggestions(false)}
+          />
+        )}
 
         {/* Map Controls */}
         <div className="absolute right-4 top-4 flex flex-col gap-2 z-10">
