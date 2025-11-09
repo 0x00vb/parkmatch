@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, TruckIcon, CalendarIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, TruckIcon, CalendarIcon, MapPinIcon, EllipsisVerticalIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useNotificationActions } from "@/lib/hooks/useNotifications";
 
 interface Vehicle {
@@ -20,8 +20,9 @@ interface Vehicle {
 export default function VehiclesSection() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const router = useRouter();
-  const { showError } = useNotificationActions();
+  const { showError, showSuccess } = useNotificationActions();
 
   useEffect(() => {
     fetchVehicles();
@@ -46,8 +47,50 @@ export default function VehiclesSection() {
   };
 
   const handleAddVehicle = () => {
-    router.push("/setup/vehicles/add");
+    router.push("/setup/vehicles/add?from=dashboard");
   };
+
+  const handleEditVehicle = (vehicleId: string) => {
+    setOpenDropdownId(null); // Close dropdown
+    router.push(`/setup/vehicles/edit/${vehicleId}?from=dashboard`);
+  };
+
+  const handleDeleteVehicle = async (vehicleId: string) => {
+    if (!confirm("¿Estás seguro de que querés eliminar este vehículo?")) return;
+
+    setOpenDropdownId(null); // Close dropdown
+
+    try {
+      const response = await fetch(`/api/vehicles/${vehicleId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setVehicles(vehicles.filter(v => v.id !== vehicleId));
+        showSuccess("Vehículo eliminado exitosamente");
+      } else {
+        showError("Error al eliminar el vehículo", "Inténtalo de nuevo más tarde");
+      }
+    } catch (error) {
+      showError("Error de conexión", "Verifica tu conexión a internet");
+    }
+  };
+
+  const toggleDropdown = (vehicleId: string) => {
+    setOpenDropdownId(openDropdownId === vehicleId ? null : vehicleId);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdownId && !(event.target as Element).closest('.dropdown-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdownId]);
 
   const formatDimensions = (vehicle: Vehicle) => {
     const dimensions = [];
@@ -124,9 +167,41 @@ export default function VehiclesSection() {
             {vehicles.map((vehicle) => (
               <div
                 key={vehicle.id}
-                className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+                className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative"
               >
-                <div className="flex items-start justify-between mb-3">
+                {/* Menu Button */}
+                <div className="absolute top-4 right-4 dropdown-container">
+                  <button
+                    onClick={() => toggleDropdown(vehicle.id)}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
+                  >
+                    <EllipsisVerticalIcon className="h-5 w-5" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {openDropdownId === vehicle.id && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                      <div className="py-1">
+                        <button
+                          onClick={() => handleEditVehicle(vehicle.id)}
+                          className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                          Editar vehículo
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(vehicle.id)}
+                          className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                          Eliminar vehículo
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-start justify-between mb-3 pr-12">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                       <TruckIcon className="h-5 w-5 text-green-600" />

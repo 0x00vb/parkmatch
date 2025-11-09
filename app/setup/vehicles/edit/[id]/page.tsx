@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,17 +29,29 @@ interface Model {
   height_mm: number | null;
 }
 
-export default function AddVehiclePage() {
+interface Vehicle {
+  id: string;
+  brand: string;
+  model: string;
+  year?: number;
+  licensePlate: string;
+  height?: number;
+  width?: number;
+  length?: number;
+}
+
+export default function EditVehiclePage() {
   const router = useRouter();
+  const params = useParams();
+  const vehicleId = params.id as string;
   const { data: session, status } = useSession();
 
-  // Check if user is coming from dashboard (already registered user)
-  const isFromDashboard = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'dashboard';
-
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingVehicle, setIsLoadingVehicle] = useState(true);
   const [makes, setMakes] = useState<Make[]>([]);
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
 
   const {
     register,
@@ -52,6 +64,9 @@ export default function AddVehiclePage() {
   });
 
   const watchedMakeId = watch("makeId");
+
+  // Check if user is coming from dashboard (already registered user)
+  const isFromDashboard = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'dashboard';
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -100,8 +115,55 @@ export default function AddVehiclePage() {
     loadModels();
   }, [watchedMakeId, setValue]);
 
+  // Load vehicle data
+  useEffect(() => {
+    const loadVehicle = async () => {
+      if (!vehicleId) return;
+
+      try {
+        const response = await fetch(`/api/vehicles/${vehicleId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const vehicleData = data.vehicle;
+          setVehicle(vehicleData);
+
+          // Find make and set values
+          const make = makes.find(m => m.name === vehicleData.brand);
+          if (make) {
+            setValue("makeId", make.id);
+
+            // Load models for this make
+            const modelsResponse = await fetch(`/api/models?make_id=${make.id}`);
+            if (modelsResponse.ok) {
+              const modelsData = await modelsResponse.json();
+              setModels(modelsData.models);
+
+              // Find model and set values
+              const model = modelsData.models.find((m: Model) => m.name === vehicleData.model);
+              if (model) {
+                setValue("modelId", model.id);
+                setSelectedModel(model);
+              }
+            }
+          }
+
+          setValue("year", vehicleData.year);
+          setValue("licensePlate", vehicleData.licensePlate);
+        }
+      } catch (error) {
+        console.error("Error loading vehicle:", error);
+      } finally {
+        setIsLoadingVehicle(false);
+      }
+    };
+
+    if (makes.length > 0 && vehicleId) {
+      loadVehicle();
+    }
+  }, [vehicleId, makes, setValue]);
+
   // Early returns must happen after all hooks are called
-  if (status === "loading") {
+  if (status === "loading" || isLoadingVehicle) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -114,6 +176,16 @@ export default function AddVehiclePage() {
 
   if (!session) {
     return null;
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Vehículo no encontrado</p>
+        </div>
+      </div>
+    );
   }
 
   const handleModelChange = (modelId: number) => {
@@ -144,8 +216,8 @@ export default function AddVehiclePage() {
         length: selectedModel.length_mm ? selectedModel.length_mm / 1000 : undefined,
       };
 
-      const response = await fetch("/api/vehicles", {
-        method: "POST",
+      const response = await fetch(`/api/vehicles/${vehicleId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(vehicleData),
       });
@@ -159,10 +231,10 @@ export default function AddVehiclePage() {
           router.push("/setup/vehicles");
         }
       } else {
-        alert("Error al añadir el vehículo");
+        alert("Error al actualizar el vehículo");
       }
     } catch (error) {
-      alert("Error al añadir el vehículo");
+      alert("Error al actualizar el vehículo");
     } finally {
       setIsLoading(false);
     }
@@ -187,10 +259,10 @@ export default function AddVehiclePage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Añadir Vehículo
+              Editar Vehículo
             </h1>
             <p className="text-gray-600 text-sm">
-              Ingresá los datos de tu vehículo para encontrar el estacionamiento perfecto.
+              Actualizá los datos de tu vehículo.
             </p>
           </div>
 
@@ -241,7 +313,6 @@ export default function AddVehiclePage() {
                 <p className="text-red-500 text-sm mt-1">{errors.modelId.message}</p>
               )}
             </div>
-
 
             <div>
               <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
@@ -305,7 +376,7 @@ export default function AddVehiclePage() {
               disabled={isLoading}
               className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 mt-8"
             >
-              {isLoading ? "Añadiendo vehículo..." : "Añadir vehículo"}
+              {isLoading ? "Actualizando vehículo..." : "Actualizar vehículo"}
             </button>
           </form>
         </div>

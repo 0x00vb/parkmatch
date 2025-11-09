@@ -33,15 +33,19 @@ export default function VehicleManagementPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
+  // Check if user is coming from dashboard (already registered user)
+  const isFromDashboard = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'dashboard';
+
   useEffect(() => {
     fetchVehicles();
-    
+
     // Check if we should show skip option (when coming from garage flow or initial setup)
+    // But NOT when coming from dashboard (already registered user)
     const urlParams = new URLSearchParams(window.location.search);
     const fromGarage = urlParams.get('from') === 'garage';
-    const isInitialSetup = window.location.pathname.includes('/setup/');
+    const isInitialSetup = window.location.pathname.includes('/setup/') && !isFromDashboard;
     setShowSkipOption(fromGarage || isInitialSetup);
-  }, []);
+  }, [isFromDashboard]);
 
   const fetchVehicles = async () => {
     try {
@@ -112,7 +116,7 @@ export default function VehicleManagementPage() {
           {/* Back Button */}
           <div className="mb-6">
             <button
-              onClick={() => router.back()}
+              onClick={() => isFromDashboard ? router.push("/dashboard") : router.back()}
               className="inline-flex items-center text-gray-600 hover:text-gray-900"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +152,7 @@ export default function VehicleManagementPage() {
                 Añadí tu primer vehículo para encontrar fácilmente estacionamiento ideal.
               </p>
               <button
-                onClick={() => router.push("/setup/vehicles/add")}
+                onClick={() => router.push(isFromDashboard ? "/setup/vehicles/add?from=dashboard" : "/setup/vehicles/add")}
                 className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
               >
                 <PlusIcon className="w-5 h-5" />
@@ -198,7 +202,7 @@ export default function VehicleManagementPage() {
                   ))}
                 </div>
                 <button
-                  onClick={() => router.push("/setup/vehicles/add")}
+                  onClick={() => router.push(isFromDashboard ? "/setup/vehicles/add?from=dashboard" : "/setup/vehicles/add")}
                   className="w-full mt-4 border-2 border-dashed border-gray-300 rounded-xl py-4 text-gray-600 hover:border-green-500 hover:text-green-600 transition-colors flex items-center justify-center gap-2"
                 >
                   <PlusIcon className="w-5 h-5" />
@@ -208,74 +212,89 @@ export default function VehicleManagementPage() {
             </>
           )}
 
-          {/* Search Preferences */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferencias de Búsqueda</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Altura mínima requerida
-                </label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="range"
-                    min="1.5"
-                    max="3.0"
-                    step="0.1"
-                    value={preferences.minHeight}
-                    onChange={(e) => setPreferences({
-                      ...preferences,
-                      minHeight: parseFloat(e.target.value)
-                    })}
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <span className="text-sm font-medium text-gray-900 min-w-[3rem]">
-                    {preferences.minHeight.toFixed(1)}m
-                  </span>
-                </div>
-              </div>
+          {/* Search Preferences - Only show during setup flow */}
+          {!isFromDashboard && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferencias de Búsqueda</h3>
 
-              <div className="flex items-center justify-between">
+              <div className="space-y-4">
                 <div>
-                  <p className="font-medium text-gray-900">Solo cocheras cubiertas</p>
-                  <p className="text-sm text-gray-600">
-                    Mostrar únicamente espacios techados
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Altura mínima requerida
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="1.5"
+                      max="3.0"
+                      step="0.1"
+                      value={preferences.minHeight}
+                      onChange={(e) => setPreferences({
+                        ...preferences,
+                        minHeight: parseFloat(e.target.value)
+                      })}
+                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <span className="text-sm font-medium text-gray-900 min-w-[3rem]">
+                      {preferences.minHeight.toFixed(1)}m
+                    </span>
+                  </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences.coveredOnly}
-                    onChange={(e) => setPreferences({
-                      ...preferences,
-                      coveredOnly: e.target.checked
-                    })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                </label>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Solo cocheras cubiertas</p>
+                    <p className="text-sm text-gray-600">
+                      Mostrar únicamente espacios techados
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences.coveredOnly}
+                      onChange={(e) => setPreferences({
+                        ...preferences,
+                        coveredOnly: e.target.checked
+                      })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={handleContinue}
-              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors"
-            >
-              Continuar
-            </button>
-            
-            {/* Skip Button - show during setup flow */}
-            {showSkipOption && (
+            {isFromDashboard ? (
+              // If coming from dashboard, show back to dashboard button
               <button
-                onClick={handleSkip}
-                className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+                onClick={() => router.push("/dashboard")}
+                className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors"
               >
-                Omitir por ahora
+                Volver al inicio
               </button>
+            ) : (
+              // Setup flow buttons
+              <>
+                <button
+                  onClick={handleContinue}
+                  className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors"
+                >
+                  Continuar
+                </button>
+
+                {/* Skip Button - show during setup flow */}
+                {showSkipOption && (
+                  <button
+                    onClick={handleSkip}
+                    className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+                  >
+                    Omitir por ahora
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
