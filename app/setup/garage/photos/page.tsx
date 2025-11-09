@@ -39,7 +39,8 @@ export default function GaragePhotosPage() {
     // Check if we have previous step data
     const locationData = sessionStorage.getItem("garageLocation");
     const detailsData = sessionStorage.getItem("garageDetails");
-    if (!locationData || !detailsData) {
+    const pricingData = sessionStorage.getItem("garagePricing");
+    if (!locationData || !detailsData || !pricingData) {
       router.push("/setup/garage");
     }
 
@@ -135,11 +136,13 @@ export default function GaragePhotosPage() {
       // Get data from previous steps
       const locationData = JSON.parse(sessionStorage.getItem("garageLocation") || "{}");
       const detailsData = JSON.parse(sessionStorage.getItem("garageDetails") || "{}");
+      const pricingData = JSON.parse(sessionStorage.getItem("garagePricing") || "{}");
 
       // Create garage
       const garageData = {
         ...locationData,
         ...detailsData,
+        ...pricingData,
         images: images.map(img => img.url),
       };
 
@@ -159,6 +162,7 @@ export default function GaragePhotosPage() {
         // Clear session storage
         sessionStorage.removeItem("garageLocation");
         sessionStorage.removeItem("garageDetails");
+        sessionStorage.removeItem("garagePricing");
         sessionStorage.removeItem("garageNextStep");
         sessionStorage.removeItem("garageSource");
 
@@ -211,7 +215,7 @@ export default function GaragePhotosPage() {
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-lg font-medium text-gray-900 mb-4">Publicar un espacio</h1>
-            <ProgressBar currentStep={2} totalSteps={4} className="mb-6" />
+            <ProgressBar currentStep={3} totalSteps={5} className="mb-6" />
           </div>
 
           {/* Title */}

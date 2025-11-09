@@ -1,9 +1,35 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+
+// This page should not be prerendered due to Leaflet components and sessionStorage usage
+export const runtime = 'edge';
 import { useRouter } from "next/navigation";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
-import { LatLng, Icon } from "leaflet";
+import dynamicImport from "next/dynamic";
+
+// Dynamically import map components to avoid SSR issues
+const MapContainer = dynamicImport(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+
+const TileLayer = dynamicImport(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+
+const Marker = dynamicImport(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+);
+
+const Popup = dynamicImport(
+  () => import("react-leaflet").then((mod) => mod.Popup),
+  { ssr: false }
+);
+
+// Import Icon statically since it's needed for icon creation
+import { Icon } from "leaflet";
 import axios from "axios";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -53,12 +79,15 @@ export default function GarageLocationPage() {
   }, [session?.user?.role, router]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    setNextStep(urlParams.get('next'));
+    // Only access window/sessionStorage on client side
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      setNextStep(urlParams.get('next'));
 
-    // Check if coming from dashboard
-    const garageSource = sessionStorage.getItem("garageSource");
-    setIsFromDashboard(garageSource === "dashboard");
+      // Check if coming from dashboard
+      const garageSource = sessionStorage.getItem("garageSource");
+      setIsFromDashboard(garageSource === "dashboard");
+    }
   }, []);
 
   useEffect(() => {
@@ -198,37 +227,50 @@ export default function GarageLocationPage() {
 
   // Componente para el mapa con eventos
   const MapComponent = () => {
-    const map = useMapEvents({
-      click: (e) => {
-        const { lat, lng } = e.latlng;
-        setLocationData(prev => ({
-          ...prev,
-          latitude: lat,
-          longitude: lng,
-        }));
-
-        if (markerRef.current) {
-          markerRef.current.setLatLng([lat, lng]);
-        }
-
-        // Geocoding inverso
-        reverseGeocode(lat, lng).then(result => {
-          if (result && addressInputRef.current) {
-            addressInputRef.current.value = result.display_name;
-            setLocationData(prev => ({
-              ...prev,
-              address: result.display_name,
-            }));
-          }
-        });
-      },
-    });
+    const [MapEventsComponent, setMapEventsComponent] = useState<React.ComponentType | null>(null);
 
     useEffect(() => {
-      mapRef.current = map;
-    }, [map]);
+      // Dynamically import useMapEvents on client side
+      import("react-leaflet").then(({ useMapEvents: useMapEventsHook }) => {
+        const EventsComponent = () => {
+          const map = useMapEventsHook({
+            click: (e: any) => {
+              const { lat, lng } = e.latlng;
+              setLocationData(prev => ({
+                ...prev,
+                latitude: lat,
+                longitude: lng,
+              }));
 
-    return null;
+              if (markerRef.current) {
+                markerRef.current.setLatLng([lat, lng]);
+              }
+
+              // Geocoding inverso
+              reverseGeocode(lat, lng).then(result => {
+                if (result && addressInputRef.current) {
+                  addressInputRef.current.value = result.display_name;
+                  setLocationData(prev => ({
+                    ...prev,
+                    address: result.display_name,
+                  }));
+                }
+              });
+            },
+          });
+
+          useEffect(() => {
+            mapRef.current = map;
+          }, [map]);
+
+          return null;
+        };
+
+        setMapEventsComponent(() => EventsComponent);
+      });
+    }, []);
+
+    return MapEventsComponent ? <MapEventsComponent /> : null;
   };
 
   // Crear ícono personalizado para el marcador
@@ -250,10 +292,12 @@ export default function GarageLocationPage() {
     }
 
     // Store location data in sessionStorage for next step
-    sessionStorage.setItem("garageLocation", JSON.stringify(locationData));
-    // Store next step info
-    if (nextStep) {
-      sessionStorage.setItem("garageNextStep", nextStep);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem("garageLocation", JSON.stringify(locationData));
+      // Store next step info
+      if (nextStep) {
+        sessionStorage.setItem("garageNextStep", nextStep);
+      }
     }
     router.push("/setup/garage/details");
   };
@@ -287,7 +331,7 @@ export default function GarageLocationPage() {
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-lg font-medium text-gray-900 mb-4">Publicar un espacio</h1>
-            <ProgressBar currentStep={0} totalSteps={4} className="mb-6" />
+            <ProgressBar currentStep={0} totalSteps={5} className="mb-6" />
           </div>
 
           {/* Title */}
@@ -363,7 +407,7 @@ export default function GarageLocationPage() {
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Confirmar en el mapa</h3>
             <div className="w-full h-48 bg-gray-200 rounded-xl overflow-hidden relative">
-              {mapLoaded ? (
+              {mapLoaded && typeof window !== 'undefined' ? (
                 <MapContainer
                   center={[locationData.latitude, locationData.longitude]}
                   zoom={15}

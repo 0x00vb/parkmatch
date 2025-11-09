@@ -305,7 +305,6 @@ export default function GaragesSection() {
                         </div>
                         {garage.hasGate && (
                           <div className="flex items-center gap-1">
-                            <span>🚪</span>
                             <span>Portón</span>
                           </div>
                         )}
