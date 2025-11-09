@@ -59,8 +59,8 @@ export default function VehiclesSection() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="bg-white p-4 shadow-sm flex-shrink-0">
+      <div className="flex flex-col h-screen bg-gray-50">
+        <div className="bg-white p-4 shadow-sm shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1" />
             <h1 className="text-xl font-bold text-gray-900 text-center flex-1">
@@ -70,7 +70,7 @@ export default function VehiclesSection() {
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando vehículos...</p>
@@ -81,7 +81,7 @@ export default function VehiclesSection() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white p-4 shadow-sm shrink-0">
         <div className="flex items-center justify-between">
@@ -102,7 +102,7 @@ export default function VehiclesSection() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-gray-50 p-4 overflow-y-auto">
+      <div className="flex-1 p-4 pb-20 overflow-y-auto">
         {vehicles.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <TruckIcon className="h-16 w-16 text-gray-300 mb-4" />
@@ -121,7 +121,7 @@ export default function VehiclesSection() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1">
             {vehicles.map((vehicle) => (
               <div
                 key={vehicle.id}

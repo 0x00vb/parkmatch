@@ -1,15 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { HomeIcon, ShieldCheckIcon, KeyIcon, WifiIcon } from "@heroicons/react/24/outline";
-import ProgressBar from "@/components/ui/ProgressBar";
 import { useSession } from "next-auth/react";
+import { 
+  ArrowLeftIcon,
+  HomeIcon, 
+  ShieldCheckIcon, 
+  KeyIcon, 
+  WifiIcon,
+  CameraIcon,
+  CurrencyDollarIcon
+} from "@heroicons/react/24/outline";
+import { useNotificationActions } from "@/lib/hooks/useNotifications";
 
-const garageDetailsSchema = z.object({
+const garageEditSchema = z.object({
+  address: z.string().min(1, "La dirección es requerida"),
+  city: z.string().min(1, "La ciudad es requerida"),
   type: z.enum(["COVERED", "UNCOVERED"]),
   height: z.number().min(1.5, "La altura mínima es 1.5m").max(5, "La altura máxima es 5m"),
   width: z.number().min(1.5, "El ancho mínimo es 1.5m").max(5, "El ancho máximo es 5m"),
@@ -18,16 +28,38 @@ const garageDetailsSchema = z.object({
   hasCameras: z.boolean(),
   accessType: z.enum(["REMOTE_CONTROL", "KEYS"]),
   rules: z.string().optional(),
+  hourlyPrice: z.number().min(0, "El precio por hora debe ser mayor a 0").optional(),
+  dailyPrice: z.number().min(0, "El precio por día debe ser mayor a 0").optional(),
+  monthlyPrice: z.number().min(0, "El precio por mes debe ser mayor a 0").optional(),
 });
 
-type GarageDetailsForm = z.infer<typeof garageDetailsSchema>;
+type GarageEditForm = z.infer<typeof garageEditSchema>;
 
-export default function GarageDetailsPage() {
-  const router = useRouter();
-  const { data: session, status } = useSession();
+interface Garage {
+  id: string;
+  address: string;
+  city: string;
+  type: "COVERED" | "UNCOVERED";
+  height: number;
+  width: number;
+  length: number;
+  hasGate: boolean;
+  hasCameras: boolean;
+  accessType: "REMOTE_CONTROL" | "KEYS";
+  rules?: string;
+  images: string[];
+  isActive: boolean;
+}
 
+export default function GarageEditPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [nextStep, setNextStep] = useState<string | null>(null);
+  const [garage, setGarage] = useState<Garage | null>(null);
+  const [fetchingGarage, setFetchingGarage] = useState(true);
+  
+  const router = useRouter();
+  const params = useParams();
+  const { data: session, status } = useSession();
+  const { showSuccess, showError } = useNotificationActions();
 
   const {
     register,
@@ -35,18 +67,9 @@ export default function GarageDetailsPage() {
     formState: { errors },
     watch,
     setValue,
-  } = useForm<GarageDetailsForm>({
-    resolver: zodResolver(garageDetailsSchema),
-    defaultValues: {
-      type: "UNCOVERED",
-      height: 2.0,
-      width: 2.5,
-      length: 5.0,
-      hasGate: false,
-      hasCameras: false,
-      accessType: "REMOTE_CONTROL",
-      rules: "",
-    },
+    reset,
+  } = useForm<GarageEditForm>({
+    resolver: zodResolver(garageEditSchema),
   });
 
   const watchedType = watch("type");
@@ -54,7 +77,6 @@ export default function GarageDetailsPage() {
   const watchedHasCameras = watch("hasCameras");
   const watchedAccessType = watch("accessType");
 
-  // All hooks must be called before any conditional returns
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
@@ -69,19 +91,73 @@ export default function GarageDetailsPage() {
   }, [session?.user?.role, router]);
 
   useEffect(() => {
-    // Check if we have location data from previous step
-    const locationData = sessionStorage.getItem("garageLocation");
-    if (!locationData) {
-      router.push("/setup/garage");
+    if (params.id && session?.user?.id) {
+      fetchGarage();
     }
+  }, [params.id, session?.user?.id]);
 
-    // Get next step info
-    const nextStepData = sessionStorage.getItem("garageNextStep");
-    setNextStep(nextStepData);
-  }, [router]);
+  const fetchGarage = async () => {
+    try {
+      setFetchingGarage(true);
+      const response = await fetch(`/api/garages/${params.id}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGarage(data.garage);
+        
+        // Populate form with garage data
+        reset({
+          address: data.garage.address,
+          city: data.garage.city,
+          type: data.garage.type,
+          height: data.garage.height,
+          width: data.garage.width,
+          length: data.garage.length,
+          hasGate: data.garage.hasGate,
+          hasCameras: data.garage.hasCameras,
+          accessType: data.garage.accessType,
+          rules: data.garage.rules || "",
+          // TODO: Add pricing fields when implemented in backend
+          hourlyPrice: 0,
+          dailyPrice: 0,
+          monthlyPrice: 0,
+        });
+      } else {
+        showError("Error", "No se pudo cargar la información de la cochera");
+        router.push("/dashboard?section=garages");
+      }
+    } catch (error) {
+      showError("Error de conexión", "Verifica tu conexión a internet");
+      router.push("/dashboard?section=garages");
+    } finally {
+      setFetchingGarage(false);
+    }
+  };
 
-  // Early returns must happen after all hooks are called
-  if (status === "loading") {
+  const onSubmit = async (data: GarageEditForm) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/garages/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        showSuccess("Cochera actualizada", "Los cambios se guardaron correctamente");
+        router.push("/dashboard?section=garages");
+      } else {
+        const errorData = await response.json();
+        showError("Error al actualizar", errorData.message || "No se pudieron guardar los cambios");
+      }
+    } catch (error) {
+      showError("Error de conexión", "Verifica tu conexión a internet");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (status === "loading" || fetchingGarage) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -92,63 +168,72 @@ export default function GarageDetailsPage() {
     );
   }
 
-  if (!session) {
+  if (!session || !garage) {
     return null;
   }
-
-  const onSubmit = async (data: GarageDetailsForm) => {
-    setIsLoading(true);
-    try {
-      // Store details data in sessionStorage for next step
-      sessionStorage.setItem("garageDetails", JSON.stringify(data));
-      router.push("/setup/garage/photos");
-    } catch (error) {
-      alert("Error al guardar los detalles");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSkip = () => {
-    if (nextStep === "vehicles") {
-      // Skip garage setup and go to vehicles
-      router.push("/setup/vehicles?from=garage");
-    } else {
-      // Skip garage setup and go to completion
-      router.push("/setup/complete");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-sm bg-white min-h-screen">
         <div className="px-6 pt-8">
-          {/* Back Button */}
-          <div className="mb-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push("/dashboard?section=garages")}
               className="inline-flex items-center text-gray-600 hover:text-gray-900"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ArrowLeftIcon className="w-5 h-5 mr-2" />
             </button>
+            <h1 className="text-lg font-medium text-gray-900">Editar Cochera</h1>
+            <div className="w-7" /> {/* Spacer */}
           </div>
 
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-lg font-medium text-gray-900 mb-4">Publicar un espacio</h1>
-            <ProgressBar currentStep={1} totalSteps={4} className="mb-6" />
-          </div>
-
-          {/* Title */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Detalles del espacio
-            </h2>
-          </div>
+          {/* Garage Image */}
+          {garage.images.length > 0 && (
+            <div className="mb-6">
+              <img
+                src={garage.images[0]}
+                alt="Cochera"
+                className="w-full h-32 object-cover rounded-xl"
+              />
+            </div>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Address */}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                Dirección
+              </label>
+              <input
+                {...register("address")}
+                type="text"
+                id="address"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Ej: Av. Corrientes 1234"
+              />
+              {errors.address && (
+                <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
+              )}
+            </div>
+
+            {/* City */}
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                Ciudad
+              </label>
+              <input
+                {...register("city")}
+                type="text"
+                id="city"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Ciudad"
+              />
+              {errors.city && (
+                <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
+              )}
+            </div>
+
             {/* Type Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -183,7 +268,7 @@ export default function GarageDetailsPage() {
             {/* Dimensions */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Altura y medidas
+                Dimensiones
               </label>
               <div className="grid grid-cols-3 gap-3">
                 <div>
@@ -243,7 +328,7 @@ export default function GarageDetailsPage() {
             {/* Security Features */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Seguridad
+                Características
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -267,7 +352,7 @@ export default function GarageDetailsPage() {
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <ShieldCheckIcon className="w-6 h-6 mx-auto mb-2" />
+                  <CameraIcon className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-sm font-medium">Cámaras</div>
                 </button>
               </div>
@@ -276,7 +361,7 @@ export default function GarageDetailsPage() {
             {/* Access Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Acceso
+                Tipo de acceso
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -301,8 +386,71 @@ export default function GarageDetailsPage() {
                   }`}
                 >
                   <KeyIcon className="w-6 h-6 mx-auto mb-2" />
-                  <div className="text-sm font-medium">Llave</div>
+                  <div className="text-sm font-medium">Llaves</div>
                 </button>
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <CurrencyDollarIcon className="w-5 h-5 inline mr-2" />
+                Precios (ARS)
+              </label>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Precio por hora</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                    <input
+                      {...register("hourlyPrice", { valueAsNumber: true })}
+                      type="number"
+                      min="0"
+                      step="10"
+                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                  </div>
+                  {errors.hourlyPrice && (
+                    <p className="text-red-500 text-xs mt-1">{errors.hourlyPrice.message}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Precio por día</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                    <input
+                      {...register("dailyPrice", { valueAsNumber: true })}
+                      type="number"
+                      min="0"
+                      step="50"
+                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                  </div>
+                  {errors.dailyPrice && (
+                    <p className="text-red-500 text-xs mt-1">{errors.dailyPrice.message}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Precio por mes</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                    <input
+                      {...register("monthlyPrice", { valueAsNumber: true })}
+                      type="number"
+                      min="0"
+                      step="1000"
+                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                  </div>
+                  {errors.monthlyPrice && (
+                    <p className="text-red-500 text-xs mt-1">{errors.monthlyPrice.message}</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -320,26 +468,15 @@ export default function GarageDetailsPage() {
               />
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3 mt-8">
+            {/* Submit Button */}
+            <div className="pt-4">
               <button
                 type="submit"
                 disabled={isLoading}
                 className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50"
               >
-                {isLoading ? "Guardando..." : "Siguiente"}
+                {isLoading ? "Guardando cambios..." : "Guardar cambios"}
               </button>
-              
-              {/* Skip Button - only show if part of conductor y propietario flow */}
-              {nextStep && (
-                <button
-                  type="button"
-                  onClick={handleSkip}
-                  className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
-                >
-                  Omitir por ahora
-                </button>
-              )}
             </div>
           </form>
         </div>

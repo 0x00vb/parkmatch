@@ -106,6 +106,9 @@ model Garage {
   accessType  AccessType
   rules       String?
   images      String[]
+  hourlyPrice Float?
+  dailyPrice  Float?
+  monthlyPrice Float?
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

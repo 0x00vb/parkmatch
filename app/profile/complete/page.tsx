@@ -79,12 +79,12 @@ export default function CompleteProfilePage() {
         });
 
         // Redirect based on user role
-        if (session.user.role === "CONDUCTOR") {
+        if (session.user.role === "CONDUCTOR_PROPIETARIO") {
           // Conductor y Propietario: primero cochera, luego vehículos
           router.push("/setup/garage?next=vehicles");
         } else {
-          // Solo Propietario: solo cochera
-          router.push("/setup/garage");
+          // Solo Conductor: solo vehículos
+          router.push("/setup/vehicles");
         }
       } else {
         alert("Error al actualizar el perfil");
@@ -117,7 +117,7 @@ export default function CompleteProfilePage() {
               Completá tus datos
             </h2>
             <p className="text-gray-600 text-sm">
-              Necesitamos algunos datos para crear tu perfil de propietario.
+              Necesitamos algunos datos para completar tu perfil.
             </p>
           </div>
 

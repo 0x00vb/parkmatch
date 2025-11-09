@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireOwner } from "@/lib/auth-middleware";
 import { z } from "zod";
 
 const createGarageSchema = z.object({
@@ -18,18 +19,15 @@ const createGarageSchema = z.object({
   accessType: z.enum(["REMOTE_CONTROL", "KEYS"]),
   rules: z.string().optional(),
   images: z.array(z.string()).min(1).max(3),
+  hourlyPrice: z.number().min(0).optional(),
+  dailyPrice: z.number().min(0).optional(),
+  monthlyPrice: z.number().min(0).optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "No autorizado" },
-        { status: 401 }
-      );
-    }
+    // Verificar que el usuario tenga rol de propietario
+    const session = await requireOwner(request);
 
     const body = await request.json();
     const garageData = createGarageSchema.parse(body);
@@ -54,16 +52,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "No autorizado" },
-        { status: 401 }
-      );
-    }
+    // Verificar que el usuario tenga rol de propietario
+    const session = await requireOwner(request);
 
     const garages = await prisma.garage.findMany({
       where: { userId: session.user.id },

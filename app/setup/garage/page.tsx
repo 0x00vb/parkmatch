@@ -18,6 +18,9 @@ interface LocationData {
 }
 
 export default function GarageLocationPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
   const [locationData, setLocationData] = useState<LocationData>({
     address: "",
     city: "Ciudad Autónoma de Buenos Aires",
@@ -29,13 +32,11 @@ export default function GarageLocationPage() {
   const [nextStep, setNextStep] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [isFromDashboard, setIsFromDashboard] = useState(false);
 
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
-
-  const router = useRouter();
-  const { data: session, status } = useSession();
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -44,15 +45,27 @@ export default function GarageLocationPage() {
     }
   }, [status, router]);
 
+  // Verificar que el usuario tenga rol de propietario
+  useEffect(() => {
+    if (session?.user?.role === "CONDUCTOR") {
+      router.push("/dashboard");
+    }
+  }, [session?.user?.role, router]);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     setNextStep(urlParams.get('next'));
+
+    // Check if coming from dashboard
+    const garageSource = sessionStorage.getItem("garageSource");
+    setIsFromDashboard(garageSource === "dashboard");
   }, []);
 
   useEffect(() => {
     setMapLoaded(true);
   }, []);
 
+  // Early returns must happen after all hooks are called
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -403,13 +416,15 @@ export default function GarageLocationPage() {
               {isLoading ? "Cargando..." : "Siguiente"}
             </button>
             
-            {/* Skip Button - allow users to skip garage setup */}
-            <button
-              onClick={handleSkip}
-              className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
-            >
-              Omitir por ahora
-            </button>
+            {/* Skip Button - only show if not coming from dashboard */}
+            {!isFromDashboard && (
+              <button
+                onClick={handleSkip}
+                className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+              >
+                Omitir por ahora
+              </button>
+            )}
           </div>
         </div>
       </div>

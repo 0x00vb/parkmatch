@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireDriver } from "@/lib/auth-middleware";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "No autorizado" },
-        { status: 401 }
-      );
-    }
+    const session = await requireDriver(request);
+    const resolvedParams = await params;
 
     // Verify the vehicle belongs to the user
     const vehicle = await prisma.vehicle.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         userId: session.user.id,
       },
     });
@@ -33,7 +26,7 @@ export async function DELETE(
     }
 
     await prisma.vehicle.delete({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     });
 
     return NextResponse.json(

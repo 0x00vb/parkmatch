@@ -28,6 +28,13 @@ export default function GaragePhotosPage() {
     }
   }, [status, router]);
 
+  // Verificar que el usuario tenga rol de propietario
+  useEffect(() => {
+    if (session?.user?.role === "CONDUCTOR") {
+      router.push("/dashboard");
+    }
+  }, [session?.user?.role, router]);
+
   useEffect(() => {
     // Check if we have previous step data
     const locationData = sessionStorage.getItem("garageLocation");
@@ -143,6 +150,9 @@ export default function GaragePhotosPage() {
       });
 
       if (response.ok) {
+        // Check if coming from dashboard
+        const garageSource = sessionStorage.getItem("garageSource");
+        
         // Check next step before clearing session storage
         const shouldContinueToVehicles = nextStep === "vehicles";
 
@@ -150,8 +160,12 @@ export default function GaragePhotosPage() {
         sessionStorage.removeItem("garageLocation");
         sessionStorage.removeItem("garageDetails");
         sessionStorage.removeItem("garageNextStep");
+        sessionStorage.removeItem("garageSource");
 
-        if (shouldContinueToVehicles) {
+        if (garageSource === "dashboard") {
+          // Return to dashboard garages section
+          router.push("/dashboard?section=garages");
+        } else if (shouldContinueToVehicles) {
           // Continue to vehicles setup
           router.push("/setup/vehicles?from=garage");
         } else {

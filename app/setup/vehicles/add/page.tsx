@@ -30,12 +30,13 @@ interface Model {
 }
 
 export default function AddVehiclePage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
   const [isLoading, setIsLoading] = useState(false);
   const [makes, setMakes] = useState<Make[]>([]);
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
-  const router = useRouter();
-  const { data: session, status } = useSession();
 
   const {
     register,
@@ -96,6 +97,7 @@ export default function AddVehiclePage() {
     loadModels();
   }, [watchedMakeId, setValue]);
 
+  // Early returns must happen after all hooks are called
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

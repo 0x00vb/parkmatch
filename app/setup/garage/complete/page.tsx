@@ -15,6 +15,13 @@ export default function GarageCompleteePage() {
     }
   }, [status, router]);
 
+  // Verificar que el usuario tenga rol de propietario
+  useEffect(() => {
+    if (session?.user?.role === "CONDUCTOR") {
+      router.push("/dashboard");
+    }
+  }, [session?.user?.role, router]);
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

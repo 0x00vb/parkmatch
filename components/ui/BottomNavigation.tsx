@@ -26,21 +26,27 @@ export default function BottomNavigation({ activeSection, onSectionChange }: Bot
   
   if (!session) return null;
 
-  const isDriverAndOwner = session.user.role === "CONDUCTOR";
+  const isDriverAndOwner = session.user.role === "CONDUCTOR_PROPIETARIO";
 
-  // Navigation items for Owner only
-  const ownerNavItems = [
+  // Navigation items for Driver only (CONDUCTOR)
+  const driverNavItems = [
+    {
+      id: "inicio",
+      label: "Inicio",
+      icon: HomeIcon,
+      iconSolid: HomeIconSolid,
+    },
+    {
+      id: "vehiculos",
+      label: "Vehículos",
+      icon: TruckIcon,
+      iconSolid: TruckIconSolid,
+    },
     {
       id: "reservas",
       label: "Reservas",
       icon: CalendarIcon,
       iconSolid: CalendarIconSolid,
-    },
-    {
-      id: "garages",
-      label: "Mis Garages",
-      icon: BuildingStorefrontIcon,
-      iconSolid: BuildingStorefrontIconSolid,
     },
     {
       id: "perfil",
@@ -50,7 +56,7 @@ export default function BottomNavigation({ activeSection, onSectionChange }: Bot
     },
   ];
 
-  // Navigation items for Driver and Owner
+  // Navigation items for Driver and Owner (CONDUCTOR_PROPIETARIO)
   const driverOwnerNavItems = [
     {
       id: "inicio",
@@ -84,7 +90,7 @@ export default function BottomNavigation({ activeSection, onSectionChange }: Bot
     },
   ];
 
-  const navItems = isDriverAndOwner ? driverOwnerNavItems : ownerNavItems;
+  const navItems = isDriverAndOwner ? driverOwnerNavItems : driverNavItems;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb">

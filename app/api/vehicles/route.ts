@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireDriver } from "@/lib/auth-middleware";
 import { z } from "zod";
 
 const createVehicleSchema = z.object({
@@ -14,16 +15,10 @@ const createVehicleSchema = z.object({
   length: z.number().optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "No autorizado" },
-        { status: 401 }
-      );
-    }
+    // Verificar que el usuario tenga rol de conductor (ambos roles pueden gestionar vehículos)
+    const session = await requireDriver(request);
 
     const vehicles = await prisma.vehicle.findMany({
       where: { userId: session.user.id },
@@ -42,14 +37,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: "No autorizado" },
-        { status: 401 }
-      );
-    }
+    // Verificar que el usuario tenga rol de conductor (ambos roles pueden gestionar vehículos)
+    const session = await requireDriver(request);
 
     const body = await request.json();
     const vehicleData = createVehicleSchema.parse(body);

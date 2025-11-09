@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import BottomNavigation from "@/components/ui/BottomNavigation";
 import InicioSection from "@/components/dashboard/InicioSection";
 import VehiclesSection from "@/components/dashboard/VehiclesSection";
+import GaragesSection from "@/components/dashboard/GaragesSection";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -18,10 +19,20 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
+  // Handle section parameter from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sectionParam = urlParams.get("section");
+    if (sectionParam && !activeSection) {
+      setActiveSection(sectionParam);
+    }
+  }, [activeSection]);
+
     // Initialize active section when session is available
   useEffect(() => {
     if (session?.user?.role && !activeSection) {
-      const defaultSection = session.user.role === "CONDUCTOR" ? "inicio" : "reservas";
+      // Ambos roles empiezan en "inicio"
+      const defaultSection = "inicio";
       // eslint-disable-next-line react-hooks/exhaustive-deps
       setActiveSection(defaultSection);
     }
@@ -58,14 +69,21 @@ export default function DashboardPage() {
           </div>
         );
       case "garages":
-        return (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Mis Garages</h2>
-              <p className="text-gray-600">Sección en desarrollo</p>
+        // Solo permitir acceso a usuarios con rol CONDUCTOR_PROPIETARIO
+        if (session?.user?.role !== "CONDUCTOR_PROPIETARIO") {
+          return (
+            <div className="flex-1 flex items-center justify-center bg-gray-50">
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Acceso Restringido</h2>
+                <p className="text-gray-600">Esta sección está disponible solo para usuarios con rol de Propietario</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Cambia tu rol desde tu perfil si deseas gestionar cocheras
+                </p>
+              </div>
             </div>
-          </div>
-        );
+          );
+        }
+        return <GaragesSection />;
       case "perfil":
         return (
           <div className="flex-1 flex items-center justify-center bg-gray-50">
@@ -93,7 +111,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="mx-auto w-full max-w-sm bg-white min-h-screen flex flex-col relative">
+      <div className="mx-auto w-full max-w-sm bg-white min-h-screen flex flex-col relative overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 flex flex-col pb-16">
           {renderActiveSection()}
