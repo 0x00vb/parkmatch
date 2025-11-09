@@ -7,6 +7,7 @@ import BottomNavigation from "@/components/ui/BottomNavigation";
 import InicioSection from "@/components/dashboard/InicioSection";
 import VehiclesSection from "@/components/dashboard/VehiclesSection";
 import GaragesSection from "@/components/dashboard/GaragesSection";
+import ProfileSection from "@/components/dashboard/ProfileSection";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -85,18 +86,7 @@ export default function DashboardPage() {
         }
         return <GaragesSection />;
       case "perfil":
-        return (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Perfil</h2>
-              <p className="text-gray-600">Sección en desarrollo</p>
-              <div className="mt-4 text-sm text-gray-500">
-                <p>Usuario: {session.user.name || session.user.email}</p>
-                <p>Rol: {session.user.role === "CONDUCTOR" ? "Conductor" : "Conductor y Propietario"}</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <ProfileSection />;
       default:
         return (
           <div className="flex-1 flex items-center justify-center bg-gray-50">

@@ -92,10 +92,9 @@ export default function VehiclesSection() {
           <div className="flex-1 flex justify-end">
             <button
               onClick={handleAddVehicle}
-              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-green-600 transition-colors"
+              className="flex items-center gap-2 bg-green-500 text-white p-2 rounded-full font-medium hover:bg-green-600 transition-colors"
             >
               <PlusIcon className="h-5 w-5" />
-              <span className="hidden sm:inline">Agregar</span>
             </button>
           </div>
         </div>
