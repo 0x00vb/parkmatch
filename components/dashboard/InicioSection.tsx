@@ -9,7 +9,8 @@ import {
   PlusIcon,
   MinusIcon,
   MapPinIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowLeftIcon
 } from "@heroicons/react/24/outline";
 import DebouncedInput from "@/components/ui/DebouncedInput";
 import {
@@ -102,6 +103,8 @@ export default function InicioSection() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<GeocodingResult | null>(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [modalResults, setModalResults] = useState<Array<{ garage?: Garage; parkingSpot?: ParkingSpot; distance: number }>>([]);
 
   // Load garages from API
   useEffect(() => {
@@ -229,10 +232,12 @@ export default function InicioSection() {
         } else {
           console.error('Error fetching geocoding results:', response.statusText);
           setSearchSuggestions([]);
+          setShowSuggestions(false);
         }
       } catch (error) {
         console.error('Error searching locations:', error);
         setSearchSuggestions([]);
+        setShowSuggestions(false);
       } finally {
         setIsSearching(false);
       }
@@ -250,11 +255,36 @@ export default function InicioSection() {
   }, []);
 
   const handleSelectSuggestion = useCallback((suggestion: SearchSuggestion) => {
-    setSelectedLocation(suggestion.result);
-    setSearchQuery(suggestion.result.displayName);
+    const location = suggestion.result;
+    const searchCoords: Coordinates = { lat: location.lat, lng: location.lng };
+
+    // Filtrar garages y parking spots por proximidad (5km)
+    const nearbyGarages = filterByRadius(garages, searchCoords, 5);
+    const nearbyParkingSpots = filterByRadius(parkingSpots, searchCoords, 5);
+
+    // Crear lista combinada con distancias
+    const results: Array<{ garage?: Garage; parkingSpot?: ParkingSpot; distance: number }> = [];
+
+    nearbyGarages.forEach(garage => {
+      const distance = calculateDistance(searchCoords, { lat: garage.latitude, lng: garage.longitude });
+      results.push({ garage, distance });
+    });
+
+    nearbyParkingSpots.forEach(spot => {
+      const distance = calculateDistance(searchCoords, { lat: spot.latitude, lng: spot.longitude });
+      results.push({ parkingSpot: spot, distance });
+    });
+
+    // Ordenar por distancia
+    results.sort((a, b) => a.distance - b.distance);
+
+    setSelectedLocation(location);
+    setSearchQuery(location.displayName);
+    setModalResults(results);
     setShowSuggestions(false);
+    setShowResultsModal(true);
     setDebouncedSearchQuery(""); // Limpiar para evitar nuevas búsquedas
-  }, []);
+  }, [garages, parkingSpots]);
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery("");
@@ -262,9 +292,15 @@ export default function InicioSection() {
     setSelectedLocation(null);
     setSearchSuggestions([]);
     setShowSuggestions(false);
+    setShowResultsModal(false);
+    setModalResults([]);
     // Resetear mapa a vista general
     setMapCenter({ lat: -34.6037, lng: -58.3816 });
     setZoom(13);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setShowResultsModal(false);
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -330,9 +366,9 @@ export default function InicioSection() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Search Header */}
-      <div className="bg-white p-4 shadow-sm shrink-0">
+      <div className="bg-white p-4 shadow-sm shrink-0 ">
         <div className="mb-4 relative">
           <DebouncedInput
             value={searchQuery}
@@ -371,7 +407,7 @@ export default function InicioSection() {
                   className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
                 >
                   <div className="flex items-start gap-3">
-                    <MapPinIcon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <MapPinIcon className="h-5 w-5 text-gray-400 mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-gray-900 truncate">
                         {suggestion.result.displayName}
@@ -397,6 +433,7 @@ export default function InicioSection() {
               </div>
             </div>
           )}
+
         </div>
 
         {/* Filter Buttons */}
@@ -421,7 +458,7 @@ export default function InicioSection() {
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 relative min-h-0">
+      <div className="relative min-h-0 overflow-hidden">
         <Map
           center={mapCenter}
           zoom={zoom}
@@ -500,6 +537,152 @@ export default function InicioSection() {
             >
               Cancelar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Results Modal */}
+      {showResultsModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="w-full max-w-sm bg-white rounded-t-2xl max-h-1/2 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <button
+                onClick={handleCloseModal}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <ArrowLeftIcon className="h-5 w-5" />
+                <span className="text-sm font-medium">Volver</span>
+              </button>
+              <div className="text-sm font-medium text-gray-900">
+                Cocheras cercanas
+              </div>
+              <div className="w-16" /> {/* Spacer for centering */}
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto max-h-96">
+              {modalResults.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {modalResults.map((result, index) => {
+                    const item = result.garage || result.parkingSpot!;
+                    const isGarage = !!result.garage;
+
+                    return (
+                      <div
+                        key={`${isGarage ? 'garage' : 'spot'}-${item.id}`}
+                        className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          if (isGarage) {
+                            handleGarageClick(item.id);
+                          } else {
+                            // Handle parking spot click (could navigate to details or show on map)
+                            setMapCenter({ lat: item.latitude, lng: item.longitude });
+                            setZoom(18);
+                            setShowResultsModal(false);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="shrink-0">
+                            {isGarage ? (
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <div className="w-6 h-6 bg-blue-500 rounded"></div>
+                              </div>
+                            ) : (
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                (item as ParkingSpot).available
+                                  ? (item as ParkingSpot).type === "COVERED"
+                                    ? "bg-green-100"
+                                    : "bg-orange-100"
+                                  : "bg-red-100"
+                              }`}>
+                                <div className={`w-6 h-6 rounded ${
+                                  (item as ParkingSpot).available
+                                    ? (item as ParkingSpot).type === "COVERED"
+                                      ? "bg-green-500"
+                                      : "bg-orange-500"
+                                    : "bg-red-500"
+                                }`}></div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-sm font-medium text-gray-900 truncate">
+                                  {item.address}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-gray-500">
+                                    {result.distance < 1
+                                      ? `${(result.distance * 1000).toFixed(0)}m`
+                                      : `${result.distance.toFixed(1)}km`
+                                    }
+                                  </span>
+                                  {isGarage ? (
+                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                      Cochera
+                                    </span>
+                                  ) : (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                      (item as ParkingSpot).available
+                                        ? (item as ParkingSpot).type === "COVERED"
+                                          ? "bg-green-100 text-green-800"
+                                          : "bg-orange-100 text-orange-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}>
+                                      {(item as ParkingSpot).available ? "Disponible" : "Ocupado"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {isGarage && result.garage?.hourlyPrice && (
+                                <div className="shrink-0 ml-2">
+                                  <span className="text-sm font-semibold text-green-600">
+                                    ${result.garage.hourlyPrice}/h
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {isGarage && result.garage && (
+                              <div className="flex items-center gap-2 mt-2">
+                                {result.garage.hasGate && (
+                                  <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+                                    Portón
+                                  </span>
+                                )}
+                                {result.garage.hasCameras && (
+                                  <span className="text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded">
+                                    Cámaras
+                                  </span>
+                                )}
+                                <span className="text-xs bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded">
+                                  {result.garage.accessType === "REMOTE_CONTROL" ? "Control remoto" : "Llaves"}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <MapPinIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No hay cocheras cerca de esta ubicación
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Intenta buscar en otra ubicación o amplía tu búsqueda
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

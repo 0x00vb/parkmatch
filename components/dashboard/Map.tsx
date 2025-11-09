@@ -194,7 +194,7 @@ function MapComponent({ center, zoom, parkingSpots, garages, onMapReady, onGarag
 
   if (!isClient) {
     return (
-      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center min-h-0">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando mapa...</p>
@@ -204,13 +204,13 @@ function MapComponent({ center, zoom, parkingSpots, garages, onMapReady, onGarag
   }
 
   return (
-    <div className="w-full h-full min-h-[400px]">
+    <div className="w-full h-full overflow-hidden">
       <MapContainer
         center={[center.lat, center.lng] as LatLngExpression}
         zoom={zoom}
         className="w-full h-full"
         zoomControl={false}
-        style={{ height: '100%', width: '100%', minHeight: '400px' }}
+        style={{ height: '100%', width: '100%' }}
         scrollWheelZoom={true}
         dragging={true}
         touchZoom={true}
