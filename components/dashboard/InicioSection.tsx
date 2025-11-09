@@ -382,21 +382,6 @@ export default function InicioSection() {
             showClearButton={!!selectedLocation}
           />
 
-          {/* Indicador de ubicación seleccionada */}
-          {selectedLocation && (
-            <div className="absolute right-12 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-green-600 font-medium">Seleccionada</span>
-            </div>
-          )}
-
-          {/* Indicador de búsqueda */}
-          {isSearching && (
-            <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
-            </div>
-          )}
-
           {/* Sugerencias de búsqueda */}
           {showSuggestions && searchSuggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1">
@@ -458,7 +443,7 @@ export default function InicioSection() {
       </div>
 
       {/* Map Container */}
-      <div className="relative min-h-0 overflow-hidden">
+      <div className="relative min-h-0  overflow-hidden">
         <Map
           center={mapCenter}
           zoom={zoom}

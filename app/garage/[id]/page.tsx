@@ -173,17 +173,18 @@ export default function GarageDetailsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="relative">
+      <div className="mx-auto max-w-sm bg-white min-h-screen">
+        {/* Header */}
+        <div className="relative">
         <button
           onClick={() => router.back()}
-          className="absolute top-4 left-4 z-20 w-10 h-10 bg-black bg-opacity-50 rounded-full flex items-center justify-center"
+          className="absolute top-4 left-6 z-20 w-10 h-10 bg-black bg-opacity-50 rounded-full flex items-center justify-center"
         >
           <ArrowLeftIcon className="w-6 h-6 text-white" />
         </button>
 
         {/* Image Carousel */}
-        <div className="relative h-48 bg-gray-200">
+        <div className="relative h-40vh bg-gray-200">
           {garage.images.length > 0 ? (
             <>
               <img
@@ -223,7 +224,7 @@ export default function GarageDetailsPage() {
       </div>
 
       {/* Content */}
-      <div className="px-4 py-4">
+      <div className="px-6 py-4">
         {/* Title and Rating */}
         <div className="mb-3">
           <h1 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
@@ -306,7 +307,7 @@ export default function GarageDetailsPage() {
             Ubicación
           </h2>
 
-          <div className="h-40 bg-gray-200 rounded-lg overflow-hidden">
+          <div className="h-48vh bg-gray-200 rounded-lg overflow-hidden">
             {isMapLoaded ? (
               <MapContainer
                 center={[garage.latitude, garage.longitude]}
@@ -369,7 +370,7 @@ export default function GarageDetailsPage() {
       </div>
 
       {/* Bottom Action Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 shadow-lg safe-area-pb z-50">
         <div className="max-w-sm mx-auto">
           <div className="flex items-center justify-between mb-2">
             {garage.hourlyPrice && (
@@ -399,6 +400,7 @@ export default function GarageDetailsPage() {
             Reservar ahora
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
