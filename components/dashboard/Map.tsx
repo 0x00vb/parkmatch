@@ -204,7 +204,7 @@ function MapComponent({ center, zoom, parkingSpots, garages, onMapReady, onGarag
   }
 
   return (
-    <div className="w-full h-full overflow-hidden">
+    <div className="w-full h-full flex-1 overflow-hidden">
       <MapContainer
         center={[center.lat, center.lng] as LatLngExpression}
         zoom={zoom}

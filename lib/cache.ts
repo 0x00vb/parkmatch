@@ -113,6 +113,13 @@ export async function hybridCache<T>(
   return data;
 }
 
+// Cache object for convenient access
+export const cache = {
+  get: getCached,
+  set: setCached,
+  del: deleteCached,
+};
+
 // Cache invalidation helpers
 export const cacheInvalidation = {
   // Invalidate all makes cache

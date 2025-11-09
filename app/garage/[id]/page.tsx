@@ -11,6 +11,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import dynamic from "next/dynamic";
+import ReservationForm from "@/components/reservations/ReservationForm";
+import ReservationPending from "@/components/reservations/ReservationPending";
+import ReservationConfirmed from "@/components/reservations/ReservationConfirmed";
 
 // Dynamically import map components to avoid SSR issues
 const MapContainer = dynamic(
@@ -73,6 +76,9 @@ export default function GarageDetailsPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [viewMode, setViewMode] = useState<"details" | "reservation" | "pending" | "confirmed">("details");
+  const [currentReservationId, setCurrentReservationId] = useState<string | null>(null);
+  const [currentReservation, setCurrentReservation] = useState<any>(null);
 
   // Mock reviews data - replace with API call later
   const mockReviews: Review[] = [
@@ -167,9 +173,52 @@ export default function GarageDetailsPage() {
   };
 
   const handleReserve = () => {
-    // TODO: Implement reservation logic
-    alert("Funcionalidad de reserva próximamente");
+    setViewMode("reservation");
   };
+
+  const handleReservationBack = () => {
+    setViewMode("details");
+  };
+
+  const handleReservationSuccess = (reservationId: string) => {
+    setCurrentReservationId(reservationId);
+    setViewMode("pending");
+  };
+
+  const handleReservationConfirmed = (reservation: any) => {
+    setCurrentReservation(reservation);
+    setViewMode("confirmed");
+  };
+
+  // Show reservation flow screens
+  if (viewMode === "reservation" && garage) {
+    return (
+      <ReservationForm
+        garage={garage}
+        onBack={handleReservationBack}
+        onSuccess={handleReservationSuccess}
+      />
+    );
+  }
+
+  if (viewMode === "pending" && currentReservationId) {
+    return (
+      <ReservationPending
+        reservationId={currentReservationId}
+        onBack={handleReservationBack}
+        onConfirmed={handleReservationConfirmed}
+      />
+    );
+  }
+
+  if (viewMode === "confirmed" && currentReservation) {
+    return (
+      <ReservationConfirmed
+        reservation={currentReservation}
+        onBack={handleReservationBack}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

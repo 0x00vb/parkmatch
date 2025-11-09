@@ -8,6 +8,8 @@ import InicioSection from "@/components/dashboard/InicioSection";
 import VehiclesSection from "@/components/dashboard/VehiclesSection";
 import GaragesSection from "@/components/dashboard/GaragesSection";
 import ProfileSection from "@/components/dashboard/ProfileSection";
+import ReservationsSection from "@/components/dashboard/ReservationsSection";
+import OwnerReservationsSection from "@/components/dashboard/OwnerReservationsSection";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -61,14 +63,23 @@ export default function DashboardPage() {
       case "vehiculos":
         return <VehiclesSection />;
       case "reservas":
+        return <ReservationsSection />;
+      case "solicitudes":
+        // Solo permitir acceso a usuarios con rol CONDUCTOR_PROPIETARIO
+        if (session?.user?.role !== "CONDUCTOR_PROPIETARIO") {
         return (
           <div className="flex-1 flex items-center justify-center bg-gray-50">
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Reservas</h2>
-              <p className="text-gray-600">Sección en desarrollo</p>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Acceso Restringido</h2>
+                <p className="text-gray-600">Esta sección está disponible solo para usuarios con rol de Propietario</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Cambia tu rol desde tu perfil si deseas gestionar cocheras
+                </p>
             </div>
           </div>
         );
+        }
+        return <OwnerReservationsSection />;
       case "garages":
         // Solo permitir acceso a usuarios con rol CONDUCTOR_PROPIETARIO
         if (session?.user?.role !== "CONDUCTOR_PROPIETARIO") {
@@ -100,10 +111,10 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col">
       <div className="mx-auto w-full max-w-sm bg-white min-h-screen flex flex-col relative overflow-hidden">
         {/* Main Content */}
-        <div className="flex-1 flex flex-col pb-16">
+        <div className="flex-1 flex flex-col pb-16 h-full">
           {renderActiveSection()}
         </div>
 

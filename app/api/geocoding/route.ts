@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { hybridCache } from "@/lib/cache";
 import { z } from "zod";
-import { createErrorResponse } from "@/lib/errors";
+import { createErrorResponse, ApiError } from "@/lib/errors";
 
 const geocodingSchema = z.object({
   q: z.string().min(1).max(200).trim(),
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!validationResult.success) {
-      return createErrorResponse(400, 'Parámetros de búsqueda inválidos');
+      return createErrorResponse(new ApiError(400, 'Parámetros de búsqueda inválidos'));
     }
 
     const { q, limit, countrycodes } = validationResult.data;
@@ -135,9 +135,9 @@ export async function GET(request: NextRequest) {
     console.error('Geocoding error:', error);
 
     if (error instanceof Error && error.message === 'Error al buscar la ubicación') {
-      return createErrorResponse(503, 'Servicio de geocoding no disponible');
+      return createErrorResponse(new ApiError(503, 'Servicio de geocoding no disponible'));
     }
 
-    return createErrorResponse(500, 'Error interno del servidor');
+    return createErrorResponse(new ApiError(500, 'Error interno del servidor'));
   }
 }

@@ -2,12 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import {
-  PlusIcon,
-  MinusIcon,
-  MapPinIcon
-} from "@heroicons/react/24/outline";
 import {
   calculateDistance,
   filterByRadius,
@@ -20,12 +16,14 @@ import {
   MapControls,
   ResultsModal
 } from "./inicio";
+import ActiveReservationModal from "@/components/reservations/ActiveReservationModal";
+import { Reservation } from "@/types/reservation";
 
 // Dynamically import the Map component to avoid SSR issues
 const Map = dynamic(() => import("./Map"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+    <div className="w-full h-full bg-gray-100 flex flex-1 items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
         <p className="text-gray-600">Cargando mapa...</p>
@@ -90,6 +88,7 @@ interface SearchSuggestion {
 
 export default function InicioSection() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -106,6 +105,10 @@ export default function InicioSection() {
   const [selectedLocation, setSelectedLocation] = useState<GeocodingResult | null>(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [modalResults, setModalResults] = useState<Array<{ garage?: Garage; parkingSpot?: ParkingSpot; distance: number }>>([]);
+  const [userReservations, setUserReservations] = useState<Reservation[]>([]);
+  const [showReservationModal, setShowReservationModal] = useState(false);
+  const [activeReservation, setActiveReservation] = useState<Reservation | null>(null);
+  const [isReservationModalMinimized, setIsReservationModalMinimized] = useState(false);
 
   // Load garages from API
   useEffect(() => {
@@ -125,6 +128,122 @@ export default function InicioSection() {
 
     loadGarages();
   }, []);
+
+  // Load user's active reservations
+  useEffect(() => {
+    const loadUserReservations = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        // Get all user reservations
+        const response = await fetch('/api/reservations');
+        if (response.ok) {
+          const data = await response.json();
+          const reservations = data.reservations || [];
+          setUserReservations(reservations);
+
+          // Find reservations that should be active
+          const now = new Date();
+          const activeOrUpcoming = reservations.filter((reservation: Reservation) => {
+            const startTime = new Date(reservation.startTime);
+            const endTime = new Date(reservation.endTime);
+            
+            // Consider a reservation active if:
+            // 1. It's confirmed and the start time is within 30 minutes
+            // 2. It's already marked as active
+            // 3. Current time is between start and end time
+            const isWithin30Minutes = startTime.getTime() - now.getTime() <= 30 * 60 * 1000; // 30 minutes
+            const isCurrentlyActive = now >= startTime && now <= endTime;
+            
+            return (reservation.status === 'CONFIRMED' && (isWithin30Minutes || isCurrentlyActive)) ||
+                   reservation.status === 'ACTIVE';
+          });
+
+          if (activeOrUpcoming.length > 0) {
+            const reservation = activeOrUpcoming[0];
+            setActiveReservation(reservation);
+            
+            // Auto-update status to ACTIVE if it's time and still CONFIRMED
+            const startTime = new Date(reservation.startTime);
+            const endTime = new Date(reservation.endTime);
+            const isCurrentlyActive = now >= startTime && now <= endTime;
+            
+            if (reservation.status === 'CONFIRMED' && isCurrentlyActive) {
+              // Update status to ACTIVE
+              fetch(`/api/reservations/${reservation.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'ACTIVE' }),
+              }).then(() => {
+                // Refresh reservations after status update
+                loadUserReservations();
+              }).catch(console.error);
+            }
+            
+            setShowReservationModal(true);
+          } else {
+            setActiveReservation(null);
+            setShowReservationModal(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user reservations:', error);
+      }
+    };
+
+    loadUserReservations();
+    
+    // Poll for updates every 60 seconds
+    const interval = setInterval(loadUserReservations, 60000);
+    
+    return () => clearInterval(interval);
+  }, [session?.user?.id]);
+
+  // Handle check-in for active reservation
+  const handleCheckIn = async () => {
+    if (!activeReservation) return;
+
+    try {
+      const response = await fetch(`/api/reservations/${activeReservation.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'COMPLETED' }),
+      });
+
+      if (response.ok) {
+        // Close modal and refresh reservations
+        setShowReservationModal(false);
+        setActiveReservation(null);
+        // Optionally refresh the reservations list
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error during check-in:', error);
+    }
+  };
+
+  // Handle cancellation of active reservation
+  const handleCancelActiveReservation = async () => {
+    if (!activeReservation) return;
+
+    try {
+      const response = await fetch(`/api/reservations/${activeReservation.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Close modal and refresh reservations
+        setShowReservationModal(false);
+        setActiveReservation(null);
+        // Optionally refresh the reservations list
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error cancelling reservation:', error);
+    }
+  };
 
   // Mock data for parking spots for now - will be replaced with API call later
   useEffect(() => {
@@ -367,7 +486,7 @@ export default function InicioSection() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full flex-1 overflow-hidden">
       <SearchHeader
         searchQuery={searchQuery}
         debouncedSearchQuery={debouncedSearchQuery}
@@ -378,14 +497,14 @@ export default function InicioSection() {
         showFilters={showFilters}
         onSearchChange={handleSearchChange}
         onDebouncedSearchChange={handleDebouncedSearchChange}
-        onKeyDown={handleKeyDown}
+            onKeyDown={handleKeyDown}
         onSelectSuggestion={handleSelectSuggestion}
         onCloseSuggestions={() => setShowSuggestions(false)}
         onToggleFilters={() => setShowFilters(!showFilters)}
       />
 
       {/* Map Container */}
-      <div className="relative min-h-0  overflow-hidden">
+      <div className="relative flex-1 min-h-0 overflow-hidden">
         <Map
           center={mapCenter}
           zoom={zoom}
@@ -423,10 +542,23 @@ export default function InicioSection() {
         onGarageClick={handleGarageClick}
         onParkingSpotClick={(lat, lng) => {
           setMapCenter({ lat, lng });
-          setZoom(18);
-          setShowResultsModal(false);
+                            setZoom(18);
+                            setShowResultsModal(false);
         }}
       />
+
+      {/* Active Reservation Modal */}
+      {showReservationModal && activeReservation && (
+        <ActiveReservationModal
+          reservation={activeReservation}
+          onClose={() => setShowReservationModal(false)}
+          onCheckIn={handleCheckIn}
+          onCancel={handleCancelActiveReservation}
+          isMinimized={isReservationModalMinimized}
+          onMinimize={() => setIsReservationModalMinimized(true)}
+          onExpand={() => setIsReservationModalMinimized(false)}
+        />
+      )}
     </div>
   );
 }

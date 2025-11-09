@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeftIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import { MapPinIcon } from "@heroicons/react/24/outline";
+import ResultsHeader from "@/components/ui/ResultsHeader";
 
 interface ParkingSpot {
   id: string;
@@ -65,19 +66,7 @@ export default function ResultsModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="w-full max-w-sm bg-white rounded-t-2xl max-h-1/2 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">Volver</span>
-          </button>
-          <div className="text-sm font-medium text-gray-900">
-            Cocheras cercanas
-          </div>
-          <div className="w-16" /> {/* Spacer for centering */}
-        </div>
+        <ResultsHeader title="Cocheras cercanas" onClose={onClose} />
 
         {/* Modal Content */}
         <div className="flex-1 overflow-y-auto max-h-96">

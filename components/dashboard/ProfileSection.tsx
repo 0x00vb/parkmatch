@@ -14,9 +14,7 @@ export default function ProfileSection() {
   const { data: session } = useSession();
 
   // Get real user data
-  const userName = session?.user?.firstName && session?.user?.lastName
-    ? `${session.user.firstName} ${session.user.lastName}`
-    : session?.user?.name || "Usuario";
+  const userName = session?.user?.name || "Usuario";
 
   const userRole = session?.user?.role === "CONDUCTOR_PROPIETARIO"
     ? "Conductor y Propietario"
@@ -74,13 +72,6 @@ export default function ProfileSection() {
             <span className="text-base text-gray-900">Métodos de Pago</span>
           </button>
 
-          {/* Historial de Reservas */}
-          <button className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
-              <ClockIcon className="w-5 h-5 text-green-600" />
-            </div>
-            <span className="text-base text-gray-900">Historial de Reservas</span>
-          </button>
         </div>
       </div>
 
@@ -108,19 +99,6 @@ export default function ProfileSection() {
           <span className="text-base font-medium text-red-600">Cerrar Sesión</span>
         </button>
       </div>
-
-      {/* Debug Info - Remove in production */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="mx-4 mt-4 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
-          <p><strong>Debug Info:</strong></p>
-          <p>Email: {session?.user?.email}</p>
-          <p>Nombre completo: {userName}</p>
-          <p>Rol: {userRole}</p>
-          <p>firstName: {session?.user?.firstName}</p>
-          <p>lastName: {session?.user?.lastName}</p>
-          <p>name: {session?.user?.name}</p>
-        </div>
-      )}
     </div>
   );
 }
