@@ -7,7 +7,14 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token
+      authorized: ({ token, req }) => {
+        // Allow public access to garages API with public=true parameter
+        if (req.nextUrl.pathname === '/api/garages' && req.nextUrl.searchParams.get('public') === 'true') {
+          return true;
+        }
+        // Require authentication for all other protected routes
+        return !!token;
+      }
     },
   }
 )

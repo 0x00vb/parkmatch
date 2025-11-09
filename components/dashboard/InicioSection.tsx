@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   MagnifyingGlassIcon,
@@ -33,15 +34,60 @@ interface ParkingSpot {
   available: boolean;
 }
 
+interface Garage {
+  id: string;
+  address: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  type: "COVERED" | "UNCOVERED";
+  height: number;
+  width: number;
+  length: number;
+  hasGate: boolean;
+  hasCameras: boolean;
+  accessType: "REMOTE_CONTROL" | "KEYS";
+  hourlyPrice?: number;
+  dailyPrice?: number;
+  monthlyPrice?: number;
+  createdAt: string;
+  user: {
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
 export default function InicioSection() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpot[]>([]);
+  const [garages, setGarages] = useState<Garage[]>([]);
   const [mapCenter, setMapCenter] = useState({ lat: -34.6037, lng: -58.3816 }); // Buenos Aires
   const [zoom, setZoom] = useState(13);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // Mock data for now - will be replaced with API call
+  // Load garages from API
+  useEffect(() => {
+    const loadGarages = async () => {
+      try {
+        const response = await fetch('/api/garages?public=true');
+        if (response.ok) {
+          const data = await response.json();
+          setGarages(data.garages);
+        } else {
+          console.error('Error loading garages:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching garages:', error);
+      }
+    };
+
+    loadGarages();
+  }, []);
+
+  // Mock data for parking spots for now - will be replaced with API call later
   useEffect(() => {
     const mockSpots: ParkingSpot[] = [
       {
@@ -130,6 +176,10 @@ export default function InicioSection() {
     );
   };
 
+  const handleGarageClick = (garageId: string) => {
+    router.push(`/garage/${garageId}`);
+  };
+
   return (
     <div className="flex flex-col h-screen">
       {/* Search Header */}
@@ -174,7 +224,9 @@ export default function InicioSection() {
           center={mapCenter}
           zoom={zoom}
           parkingSpots={parkingSpots}
+          garages={garages}
           onMapReady={() => setMapLoaded(true)}
+          onGarageClick={handleGarageClick}
         />
 
         {/* Map Controls */}
@@ -201,24 +253,6 @@ export default function InicioSection() {
           <MapPinIcon className="h-6 w-6 text-gray-600" />
         </button>
 
-        {/* Map Legend */}
-        <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-md p-3 z-10">
-          <div className="text-xs font-medium text-gray-700 mb-2">Leyenda</div>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-gray-600">Cubierto disponible</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-500 rounded-full"></div>
-              <span className="text-xs text-gray-600">Descubierto disponible</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-              <span className="text-xs text-gray-600">No disponible</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Filters Panel */}

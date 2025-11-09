@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/auth-middleware";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const createGarageSchema = z.object({
@@ -54,15 +55,62 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Verificar que el usuario tenga rol de propietario
-    const session = await requireOwner(request);
+    const { searchParams } = new URL(request.url);
+    const publicGarages = searchParams.get('public') === 'true';
 
-    const garages = await prisma.garage.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-    });
+    if (publicGarages) {
+      // Rate limiting para requests públicos
+      const clientIP = request.headers.get('x-forwarded-for') ||
+                      request.headers.get('x-real-ip') ||
+                      'unknown';
+      await rateLimit(clientIP, 'public');
 
-    return NextResponse.json({ garages }, { status: 200 });
+      // Obtener garages activos para mostrar en el mapa público
+      const garages = await prisma.garage.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          address: true,
+          city: true,
+          latitude: true,
+          longitude: true,
+          type: true,
+          height: true,
+          width: true,
+          length: true,
+          hasGate: true,
+          hasCameras: true,
+          accessType: true,
+          rules: true,
+          images: true,
+          hourlyPrice: true,
+          dailyPrice: true,
+          monthlyPrice: true,
+          isActive: true,
+          createdAt: true,
+          user: {
+            select: {
+              name: true,
+              firstName: true,
+              lastName: true,
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return NextResponse.json({ garages }, { status: 200 });
+    } else {
+      // Verificar que el usuario tenga rol de propietario para acceder a sus garages
+      const session = await requireOwner(request);
+
+      const garages = await prisma.garage.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return NextResponse.json({ garages }, { status: 200 });
+    }
   } catch (error) {
     console.error("Error fetching garages:", error);
     return NextResponse.json(
