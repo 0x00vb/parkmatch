@@ -267,7 +267,7 @@ export default function ActiveReservationModal({
     <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
       <div 
         ref={modalRef}
-        className="bg-white rounded-t-2xl w-full max-w-sm mx-auto animate-slide-up shadow-2xl pointer-events-auto max-h-[85vh] overflow-hidden"
+        className="bg-white rounded-t-2xl w-full max-w-sm mx-auto animate-slide-up shadow-2xl pointer-events-auto max-h-[85vh] overflow-hidden mb-16"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">

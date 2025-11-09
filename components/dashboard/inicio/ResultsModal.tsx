@@ -64,7 +64,7 @@ export default function ResultsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="w-full max-w-sm bg-white rounded-t-2xl max-h-1/2 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out">
+      <div className="w-full max-w-sm bg-white rounded-t-2xl max-h-1/2 mb-18 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out">
         {/* Modal Header */}
         <ResultsHeader title="Cocheras cercanas" onClose={onClose} />
 
