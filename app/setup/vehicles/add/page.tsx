@@ -1,39 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 const vehicleSchema = z.object({
-  brand: z.string().min(1, "La marca es requerida"),
-  model: z.string().min(1, "El modelo es requerido"),
+  makeId: z.number().min(1, "La marca es requerida"),
+  modelId: z.number().min(1, "El modelo es requerido"),
   year: z.number().min(1990).max(new Date().getFullYear() + 1).optional(),
   licensePlate: z.string().min(6, "La patente debe tener al menos 6 caracteres"),
 });
 
 type VehicleForm = z.infer<typeof vehicleSchema>;
 
-interface CarData {
-  make: string;
-  model: string;
-  year: number;
-  class: string;
-  fuel_type: string;
-  transmission: string;
-  drive: string;
-  city_mpg: number;
-  highway_mpg: number;
-  combination_mpg: number;
+interface Make {
+  id: number;
+  name: string;
+}
+
+interface Model {
+  id: number;
+  name: string;
+  length_mm: number | null;
+  width_mm: number | null;
+  height_mm: number | null;
 }
 
 export default function AddVehiclePage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [carSuggestions, setCarSuggestions] = useState<CarData[]>([]);
-  const [selectedCar, setSelectedCar] = useState<CarData | null>(null);
+  const [makes, setMakes] = useState<Make[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const router = useRouter();
 
   const {
@@ -46,50 +45,74 @@ export default function AddVehiclePage() {
     resolver: zodResolver(vehicleSchema),
   });
 
-  const watchedBrand = watch("brand");
-  const watchedModel = watch("model");
+  const watchedMakeId = watch("makeId");
 
-  const searchCarData = async () => {
-    if (!watchedBrand || !watchedModel) return;
-
-    setIsSearching(true);
-    try {
-      const response = await fetch(
-        `/api/cars/search?make=${encodeURIComponent(watchedBrand)}&model=${encodeURIComponent(watchedModel)}`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCarSuggestions(data.cars || []);
+  // Load makes on component mount
+  useEffect(() => {
+    const loadMakes = async () => {
+      try {
+        const response = await fetch("/api/makes");
+        if (response.ok) {
+          const data = await response.json();
+          setMakes(data.makes);
+        }
+      } catch (error) {
+        console.error("Error loading makes:", error);
       }
-    } catch (error) {
-      console.error("Error searching car data:", error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+    };
+    loadMakes();
+  }, []);
 
-  const selectCarSuggestion = (car: CarData) => {
-    setSelectedCar(car);
-    setValue("brand", car.make);
-    setValue("model", car.model);
-    setValue("year", car.year);
-    setCarSuggestions([]);
+  // Load models when make changes
+  useEffect(() => {
+    const loadModels = async () => {
+      if (!watchedMakeId) {
+        setModels([]);
+        setSelectedModel(null);
+        setValue("modelId", 0);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/models?make_id=${watchedMakeId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setModels(data.models);
+        }
+      } catch (error) {
+        console.error("Error loading models:", error);
+        setModels([]);
+      }
+    };
+    loadModels();
+  }, [watchedMakeId, setValue]);
+
+  const handleModelChange = (modelId: number) => {
+    const model = models.find(m => m.id === modelId);
+    setSelectedModel(model || null);
   };
 
   const onSubmit = async (data: VehicleForm) => {
     setIsLoading(true);
     try {
+      // Find make and model names
+      const selectedMake = makes.find(make => make.id === data.makeId);
+      const selectedModel = models.find(model => model.id === data.modelId);
+
+      if (!selectedMake || !selectedModel) {
+        alert("Error: Marca o modelo no encontrado");
+        return;
+      }
+
       const vehicleData = {
-        ...data,
-        // Add estimated dimensions based on car class if available
-        height: selectedCar?.class === "compact car" ? 1.5 : 
-                selectedCar?.class === "midsize car" ? 1.6 :
-                selectedCar?.class === "large car" ? 1.7 : undefined,
-        width: 1.8, // Standard car width
-        length: selectedCar?.class === "compact car" ? 4.2 : 
-                selectedCar?.class === "midsize car" ? 4.6 :
-                selectedCar?.class === "large car" ? 5.0 : 4.5,
+        brand: selectedMake.name,
+        model: selectedModel.name,
+        year: data.year,
+        licensePlate: data.licensePlate,
+        // Use dimensions from the models table if available
+        height: selectedModel.height_mm ? selectedModel.height_mm / 1000 : undefined, // Convert mm to meters
+        width: selectedModel.width_mm ? selectedModel.width_mm / 1000 : undefined,
+        length: selectedModel.length_mm ? selectedModel.length_mm / 1000 : undefined,
       };
 
       const response = await fetch("/api/vehicles", {
@@ -139,70 +162,51 @@ export default function AddVehiclePage() {
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="makeId" className="block text-sm font-medium text-gray-700 mb-2">
                 Marca
               </label>
-              <input
-                {...register("brand")}
-                type="text"
-                id="brand"
-                placeholder="Ej: Toyota"
+              <select
+                {...register("makeId", { valueAsNumber: true })}
+                id="makeId"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              {errors.brand && (
-                <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>
+              >
+                <option value="">Seleccionar marca</option>
+                {makes.map((make) => (
+                  <option key={make.id} value={make.id}>
+                    {make.name}
+                  </option>
+                ))}
+              </select>
+              {errors.makeId && (
+                <p className="text-red-500 text-sm mt-1">{errors.makeId.message}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="modelId" className="block text-sm font-medium text-gray-700 mb-2">
                 Modelo
               </label>
-              <div className="relative">
-                <input
-                  {...register("model")}
-                  type="text"
-                  id="model"
-                  placeholder="Ej: Corolla"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={searchCarData}
-                  disabled={!watchedBrand || !watchedModel || isSearching}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600 disabled:opacity-50"
-                >
-                  <MagnifyingGlassIcon className="w-5 h-5" />
-                </button>
-              </div>
-              {errors.model && (
-                <p className="text-red-500 text-sm mt-1">{errors.model.message}</p>
+              <select
+                {...register("modelId", { valueAsNumber: true })}
+                id="modelId"
+                disabled={!watchedMakeId || models.length === 0}
+                onChange={(e) => handleModelChange(parseInt(e.target.value))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {watchedMakeId ? (models.length === 0 ? "Cargando modelos..." : "Seleccionar modelo") : "Primero selecciona una marca"}
+                </option>
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+              {errors.modelId && (
+                <p className="text-red-500 text-sm mt-1">{errors.modelId.message}</p>
               )}
             </div>
 
-            {/* Car Suggestions */}
-            {carSuggestions.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Sugerencias encontradas:</h3>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {carSuggestions.slice(0, 5).map((car, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => selectCarSuggestion(car)}
-                      className="w-full text-left p-3 bg-white rounded-lg hover:bg-green-50 border border-gray-200 hover:border-green-300 transition-colors"
-                    >
-                      <p className="font-medium text-gray-900">
-                        {car.make} {car.model} {car.year}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {car.class} • {car.fuel_type}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div>
               <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
@@ -239,16 +243,22 @@ export default function AddVehiclePage() {
               )}
             </div>
 
-            {/* Selected Car Info */}
-            {selectedCar && (
+            {/* Selected Model Info */}
+            {selectedModel && (
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <h3 className="font-medium text-green-900 mb-2">Información del vehículo:</h3>
+                <h3 className="font-medium text-green-900 mb-2">Información del modelo:</h3>
                 <div className="text-sm text-green-800 space-y-1">
-                  <p><strong>Tipo:</strong> {selectedCar.class}</p>
-                  <p><strong>Combustible:</strong> {selectedCar.fuel_type}</p>
-                  <p><strong>Transmisión:</strong> {selectedCar.transmission}</p>
+                  {selectedModel.length_mm && (
+                    <p><strong>Largo:</strong> {(selectedModel.length_mm / 1000).toFixed(2)} m</p>
+                  )}
+                  {selectedModel.width_mm && (
+                    <p><strong>Ancho:</strong> {(selectedModel.width_mm / 1000).toFixed(2)} m</p>
+                  )}
+                  {selectedModel.height_mm && (
+                    <p><strong>Alto:</strong> {(selectedModel.height_mm / 1000).toFixed(2)} m</p>
+                  )}
                   <p className="text-xs text-green-600 mt-2">
-                    Las dimensiones se estimarán automáticamente basadas en el tipo de vehículo.
+                    Las dimensiones se obtienen de la base de datos del modelo seleccionado.
                   </p>
                 </div>
               </div>
