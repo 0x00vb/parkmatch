@@ -7,6 +7,7 @@ import { LatLng, Icon } from "leaflet";
 import axios from "axios";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { useSession } from "next-auth/react";
 import "leaflet/dist/leaflet.css";
 
 interface LocationData {
@@ -32,11 +33,17 @@ export default function GarageLocationPage() {
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
-  
+
   const router = useRouter();
-  
-  // Check if this is part of the conductor y propietario flow
-  
+  const { data: session, status } = useSession();
+
+  // All hooks must be called before any conditional returns
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     setNextStep(urlParams.get('next'));
@@ -45,6 +52,21 @@ export default function GarageLocationPage() {
   useEffect(() => {
     setMapLoaded(true);
   }, []);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   // Función para buscar direcciones usando Nominatim
   const searchAddress = async (query: string) => {

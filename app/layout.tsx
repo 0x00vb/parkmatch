@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import SessionProvider from "@/components/providers/SessionProvider";
+import NotificationProvider from "@/components/providers/NotificationProvider";
+import NotificationContainer from "@/components/ui/NotificationContainer";
 import "./globals.css";
+
+// Import Leaflet CSS globally for map components
+import "leaflet/dist/leaflet.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +34,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-        {children}
+          <NotificationProvider>
+            {children}
+            <NotificationContainer />
+          </NotificationProvider>
         </SessionProvider>
       </body>
     </html>

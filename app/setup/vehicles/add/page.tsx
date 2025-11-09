@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useSession } from "next-auth/react";
 
 const vehicleSchema = z.object({
   makeId: z.number().min(1, "La marca es requerida"),
@@ -34,6 +35,7 @@ export default function AddVehiclePage() {
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const {
     register,
@@ -46,6 +48,13 @@ export default function AddVehiclePage() {
   });
 
   const watchedMakeId = watch("makeId");
+
+  // All hooks must be called before any conditional returns
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
 
   // Load makes on component mount
   useEffect(() => {
@@ -86,6 +95,21 @@ export default function AddVehiclePage() {
     };
     loadModels();
   }, [watchedMakeId, setValue]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   const handleModelChange = (modelId: number) => {
     const model = models.find(m => m.id === modelId);

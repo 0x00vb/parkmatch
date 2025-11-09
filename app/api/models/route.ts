@@ -1,31 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withErrorHandling, logInfo, API_ERRORS } from "@/lib/errors";
+import { validateData, idSchema } from "@/lib/validation";
+import { hybridCache, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const makeId = searchParams.get("make_id");
+async function getModels(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const makeId = searchParams.get("make_id");
 
-    if (!makeId) {
-      return NextResponse.json(
-        { message: "make_id es requerido" },
-        { status: 400 }
-      );
-    }
-
-    const models = await prisma.$queryRaw`
-      SELECT id, name, length_mm, width_mm, height_mm
-      FROM models
-      WHERE make_id = ${parseInt(makeId)}
-      ORDER BY name ASC
-    `;
-
-    return NextResponse.json({ models }, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching models:", error);
-    return NextResponse.json(
-      { message: "Error interno del servidor" },
-      { status: 500 }
-    );
+  if (!makeId) {
+    throw API_ERRORS.VALIDATION_ERROR("make_id es requerido");
   }
+
+  const validation = validateData(idSchema, { id: makeId });
+  if (!validation.success) {
+    throw API_ERRORS.VALIDATION_ERROR(validation.error);
+  }
+
+  logInfo("Fetching vehicle models", { makeId: validation.data.id });
+
+  const models = await hybridCache(
+    CACHE_KEYS.MODELS_BY_MAKE(validation.data.id),
+    CACHE_TTL.MODELS,
+    async () => {
+      logInfo("Cache miss - fetching models from database", { makeId: validation.data.id });
+      return await prisma.model.findMany({
+        where: {
+          makeId: validation.data.id
+        },
+        select: {
+          id: true,
+          name: true,
+          lengthMm: true,
+          widthMm: true,
+          heightMm: true
+        },
+        orderBy: {
+          name: 'asc'
+        }
+      });
+    }
+  );
+
+  return NextResponse.json({ models }, { status: 200 });
 }
+
+export const GET = withErrorHandling(getModels);

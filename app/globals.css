@@ -1,6 +1,50 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+/* Leaflet map container styles */
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  z-index: 1;
+  min-height: 400px;
+}
+
+/* Ensure map tiles load properly */
+.leaflet-tile-pane {
+  opacity: 1 !important;
+}
+
+/* Fix for map not showing */
+.leaflet-map-pane {
+  z-index: 1;
+}
+
+/* Ensure map container takes full height */
+.leaflet-container .leaflet-map-pane {
+  height: 100% !important;
+}
+
+/* Fix for mobile map rendering */
+@media (max-width: 640px) {
+  .leaflet-container {
+    min-height: 300px;
+  }
+}
+
+/* Custom marker colors for parking spots */
+.marker-green {
+  filter: hue-rotate(90deg) saturate(1.5);
+}
+
+.marker-orange {
+  filter: hue-rotate(30deg) saturate(1.5);
+}
+
+.marker-red {
+  filter: hue-rotate(0deg) saturate(1.2);
 }

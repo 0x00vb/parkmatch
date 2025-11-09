@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { HomeIcon, ShieldCheckIcon, KeyIcon, WifiIcon } from "@heroicons/react/24/outline";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { useSession } from "next-auth/react";
 
 const garageDetailsSchema = z.object({
   type: z.enum(["COVERED", "UNCOVERED"]),
@@ -25,6 +26,7 @@ export default function GarageDetailsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [nextStep, setNextStep] = useState<string | null>(null);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const {
     register,
@@ -51,17 +53,39 @@ export default function GarageDetailsPage() {
   const watchedHasCameras = watch("hasCameras");
   const watchedAccessType = watch("accessType");
 
+  // All hooks must be called before any conditional returns
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
   useEffect(() => {
     // Check if we have location data from previous step
     const locationData = sessionStorage.getItem("garageLocation");
     if (!locationData) {
       router.push("/setup/garage");
     }
-    
+
     // Get next step info
     const nextStepData = sessionStorage.getItem("garageNextStep");
     setNextStep(nextStepData);
   }, [router]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   const onSubmit = async (data: GarageDetailsForm) => {
     setIsLoading(true);

@@ -155,9 +155,9 @@ El diseño web (desktop) debe adaptarse automáticamente a partir del diseño mo
 * Tras iniciar sesión, redirigir al dashboard principal.
 * El diseño y funcionalidades dependerán del rol:
 
-  * **Conductor:** buscar y reservar cocheras.
   * **Propietario:** ver y administrar cocheras publicadas.
-* Dejar en blanco por ahora (será desarrollado después).
+  * **Conductor y propietario:** buscar y reservar cocheras y tambien funcionalidad de propietario.
+
 
 ---
 
@@ -192,7 +192,3 @@ El diseño web (desktop) debe adaptarse automáticamente a partir del diseño mo
   6. Dashboard principal
 
 Cada módulo deberá exportar componentes y endpoints listos para ser conectados entre sí.
-
----
-
-¿Querés que ahora te divida este **prompt maestro** en 6 prompts individuales (uno por módulo, listos para copiar en tu agente) o preferís que te deje un **único prompt unificado**, pensado para generar todo el proyecto base de una vez?

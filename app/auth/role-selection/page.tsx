@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { KeyIcon } from "@heroicons/react/24/outline";
@@ -11,7 +11,28 @@ export default function RoleSelectionPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { data: session, update } = useSession();
+  const { data: session, status, update } = useSession();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   const handleRoleSelection = async () => {
     if (!selectedRole || !session?.user?.id) return;
@@ -25,8 +46,8 @@ export default function RoleSelectionPage() {
       });
 
       if (response.ok) {
-        // Update the session with the new role
-        await update({ role: selectedRole });
+        // Refresh the page to update the session with new role
+        router.refresh();
         router.push("/profile/complete");
       } else {
         alert("Error al actualizar el rol");
@@ -78,26 +99,26 @@ export default function RoleSelectionPage() {
           {/* Role Options */}
           <div className="space-y-4 mb-8">
             <button
-              onClick={() => setSelectedRole("CONDUCTOR_PROPIETARIO")}
+              onClick={() => setSelectedRole("CONDUCTOR")}
               className={`w-full p-4 border-2 rounded-2xl text-left transition-colors ${
-                selectedRole === "CONDUCTOR_PROPIETARIO"
+                selectedRole === "CONDUCTOR"
                   ? "border-green-500 bg-green-50"
                   : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-1">Propietario</h3>
+                  <h3 className="font-semibold text-gray-900 mb-1">Conductor</h3>
                   <p className="text-sm text-gray-600">
-                    Publicá y gestioná tus espacios de estacionamiento.
+                    Buscá y reservá espacios de estacionamiento.
                   </p>
                 </div>
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedRole === "CONDUCTOR_PROPIETARIO"
+                  selectedRole === "CONDUCTOR"
                     ? "border-green-500 bg-green-500"
                     : "border-gray-300"
                 }`}>
-                  {selectedRole === "CONDUCTOR_PROPIETARIO" && (
+                  {selectedRole === "CONDUCTOR" && (
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   )}
                 </div>
@@ -105,9 +126,9 @@ export default function RoleSelectionPage() {
             </button>
 
             <button
-              onClick={() => setSelectedRole("CONDUCTOR")}
+              onClick={() => setSelectedRole("CONDUCTOR_PROPIETARIO")}
               className={`w-full p-4 border-2 rounded-2xl text-left transition-colors ${
-                selectedRole === "CONDUCTOR"
+                selectedRole === "CONDUCTOR_PROPIETARIO"
                   ? "border-green-500 bg-green-50"
                   : "border-gray-200 hover:border-gray-300"
               }`}
@@ -120,11 +141,11 @@ export default function RoleSelectionPage() {
                   </p>
                 </div>
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedRole === "CONDUCTOR"
+                  selectedRole === "CONDUCTOR_PROPIETARIO"
                     ? "border-green-500 bg-green-500"
                     : "border-gray-300"
                 }`}>
-                  {selectedRole === "CONDUCTOR" && (
+                  {selectedRole === "CONDUCTOR_PROPIETARIO" && (
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   )}
                 </div>

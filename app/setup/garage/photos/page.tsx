@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PhotoIcon, XMarkIcon, CameraIcon } from "@heroicons/react/24/outline";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { useSession } from "next-auth/react";
 
 interface UploadedImage {
   id: string;
@@ -18,6 +19,14 @@ export default function GaragePhotosPage() {
   const [nextStep, setNextStep] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // All hooks must be called before any conditional returns
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     // Check if we have previous step data
@@ -26,11 +35,26 @@ export default function GaragePhotosPage() {
     if (!locationData || !detailsData) {
       router.push("/setup/garage");
     }
-    
+
     // Get next step info
     const nextStepData = sessionStorage.getItem("garageNextStep");
     setNextStep(nextStepData);
   }, [router]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;

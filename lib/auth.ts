@@ -55,6 +55,15 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
+      } else if (token.sub) {
+        // Consultar rol actualizado de la BD en cada request
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { role: true }
+        })
+        if (dbUser) {
+          token.role = dbUser.role
+        }
       }
       return token
     },

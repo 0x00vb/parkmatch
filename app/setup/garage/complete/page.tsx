@@ -2,11 +2,33 @@
 
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 
 export default function GarageCompleteePage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   const handleContinue = () => {
     // Check if this is a conductor y propietario who should continue to vehicles
