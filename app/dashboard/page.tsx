@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import BottomNavigation from "@/components/ui/BottomNavigation";
 import InicioSection from "@/components/dashboard/InicioSection";
+import VehiclesSection from "@/components/dashboard/VehiclesSection";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -17,15 +18,14 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
-  // Set default active section based on user role
-  const defaultSection = session?.user?.role === "CONDUCTOR" ? "inicio" : "reservas";
-
-  // Initialize active section when session is available
+    // Initialize active section when session is available
   useEffect(() => {
     if (session?.user?.role && !activeSection) {
+      const defaultSection = session.user.role === "CONDUCTOR" ? "inicio" : "reservas";
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       setActiveSection(defaultSection);
     }
-  }, [session?.user?.role, activeSection, defaultSection]);
+  }, [session?.user?.role, activeSection]);
 
   if (status === "loading") {
     return (
@@ -47,14 +47,7 @@ export default function DashboardPage() {
       case "inicio":
         return <InicioSection />;
       case "vehiculos":
-        return (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Vehículos</h2>
-              <p className="text-gray-600">Sección en desarrollo</p>
-            </div>
-          </div>
-        );
+        return <VehiclesSection />;
       case "reservas":
         return (
           <div className="flex-1 flex items-center justify-center bg-gray-50">

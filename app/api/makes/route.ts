@@ -34,15 +34,11 @@ async function getMakes(request: NextRequest) {
     CACHE_TTL.MAKES,
     async () => {
       logInfo("Cache miss - fetching makes from database");
-      return await prisma.make.findMany({
-        select: {
-          id: true,
-          name: true
-        },
-        orderBy: {
-          name: 'asc'
-        }
-      });
+      return await prisma.$queryRaw`
+        SELECT id, name
+        FROM makes
+        ORDER BY name ASC
+      `;
     }
   );
 

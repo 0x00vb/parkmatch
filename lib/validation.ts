@@ -27,7 +27,7 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { succes
     return { success: true, data: validData };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ') };
+      return { success: false, error: error.issues.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ') };
     }
     return { success: false, error: 'Error de validación desconocido' };
   }

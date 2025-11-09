@@ -24,21 +24,12 @@ async function getModels(request: NextRequest) {
     CACHE_TTL.MODELS,
     async () => {
       logInfo("Cache miss - fetching models from database", { makeId: validation.data.id });
-      return await prisma.model.findMany({
-        where: {
-          makeId: validation.data.id
-        },
-        select: {
-          id: true,
-          name: true,
-          lengthMm: true,
-          widthMm: true,
-          heightMm: true
-        },
-        orderBy: {
-          name: 'asc'
-        }
-      });
+      return await prisma.$queryRaw`
+        SELECT id, name, length_mm, width_mm, height_mm
+        FROM models
+        WHERE make_id = ${validation.data.id}
+        ORDER BY name ASC
+      `;
     }
   );
 
