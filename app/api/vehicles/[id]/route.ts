@@ -90,7 +90,7 @@ export async function PATCH(
     console.error("Error updating vehicle:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: "Datos inválidos", errors: error.errors },
+        { message: "Datos inválidos", errors: error.issues },
         { status: 400 }
       );
     }

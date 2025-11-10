@@ -23,6 +23,12 @@ const createGarageSchema = z.object({
   hourlyPrice: z.number().min(0).optional(),
   dailyPrice: z.number().min(0).optional(),
   monthlyPrice: z.number().min(0).optional(),
+  schedules: z.array(z.object({
+    dayOfWeek: z.number().min(0).max(6),
+    startTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido"),
+    endTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido"),
+    isActive: z.boolean(),
+  })).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -31,14 +37,33 @@ export async function POST(request: NextRequest) {
     const session = await requireOwner(request);
 
     const body = await request.json();
-    const garageData = createGarageSchema.parse(body);
+    const { schedules, ...garageData } = createGarageSchema.parse(body);
 
-    const garage = await prisma.garage.create({
-      data: {
-        ...garageData,
-        userId: session.user.id,
-      },
+    // Create garage with availability schedules in a transaction
+    const garage = await prisma.$transaction(async (tx) => {
+      // Create the garage
+      const createdGarage = await tx.garage.create({
+        data: {
+          ...garageData,
+          userId: session.user.id,
+        },
+      });
+
+      return createdGarage;
     });
+
+    // Create availability schedules outside the transaction if provided
+    if (schedules && schedules.length > 0) {
+      await prisma.availabilitySchedule.createMany({
+        data: schedules.map(schedule => ({
+          garageId: garage.id,
+          dayOfWeek: schedule.dayOfWeek,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          isActive: schedule.isActive,
+        })),
+      });
+    }
 
     return NextResponse.json(
       { message: "Cochera creada exitosamente", garage },
@@ -93,7 +118,12 @@ export async function GET(request: NextRequest) {
               name: true,
               firstName: true,
               lastName: true,
+              lastName: true,
             }
+          },
+          availabilitySchedules: {
+            where: { isActive: true },
+            orderBy: { dayOfWeek: 'asc' },
           }
         },
         orderBy: { createdAt: "desc" },

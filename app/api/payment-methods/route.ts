@@ -47,7 +47,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createPaymentMethodSchema.parse(body);
 
+    // Verify the user exists in the database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user!.id }
+    });
+
+    if (!dbUser) {
+      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 404 });
+    }
+
     // Ensure only one default; use transaction if default requested
+
     const created = await prisma.$transaction(async (tx) => {
       if (data.default) {
         await tx.paymentMethod.updateMany({

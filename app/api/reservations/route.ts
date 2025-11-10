@@ -8,6 +8,7 @@ import { logError, logInfo } from "@/lib/errors";
 import {
   validateVehicleCompatibility,
   checkGarageAvailability,
+  checkGarageScheduleAvailability,
   calculateReservationPrice,
   validateReservationTime,
   invalidateReservationCache,
@@ -128,7 +129,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check garage availability
+    // Check if the requested time slot is within garage's availability schedule
+    const scheduleAvailability = await checkGarageScheduleAvailability(
+      validatedData.garageId,
+      startTime,
+      endTime
+    );
+
+    if (!scheduleAvailability.available) {
+      return NextResponse.json(
+        { error: "Horario no disponible", details: scheduleAvailability.errors },
+        { status: 400 }
+      );
+    }
+
+    // Check garage availability (conflicts with existing reservations)
     const isAvailable = await checkGarageAvailability(
       validatedData.garageId,
       startTime,

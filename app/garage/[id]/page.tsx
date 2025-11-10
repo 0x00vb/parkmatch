@@ -34,6 +34,14 @@ const Marker = dynamic(
   { ssr: false }
 );
 
+interface AvailabilitySchedule {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
 interface Garage {
   id: string;
   address: string;
@@ -59,6 +67,7 @@ interface Garage {
     firstName?: string;
     lastName?: string;
   };
+  availabilitySchedules?: AvailabilitySchedule[];
 }
 
 interface Review {
@@ -236,6 +245,20 @@ export default function GarageDetailsPage() {
     router.push('/profile/payment-methods');
   };
 
+  const getDayName = (dayOfWeek: number) => {
+    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return days[dayOfWeek];
+  };
+
+  const getDayShortName = (dayOfWeek: number) => {
+    const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    return days[dayOfWeek];
+  };
+
+  const formatTime = (time: string) => {
+    return time.substring(0, 5); // Remove seconds if present
+  };
+
   // Show reservation flow screens
   if (viewMode === "reservation" && garage) {
     return (
@@ -379,20 +402,20 @@ export default function GarageDetailsPage() {
           </h2>
 
           <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Lun-Vie</span>
-              <span className="text-sm text-green-600 font-medium">08:00 - 20:00</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Sábados</span>
-              <span className="text-sm text-green-600 font-medium">10:00 - 18:00</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">Domingos</span>
-              <span className="text-sm text-gray-400">No disponible</span>
-            </div>
+            {garage.availabilitySchedules && garage.availabilitySchedules.length > 0 ? (
+              garage.availabilitySchedules.map((schedule) => (
+                <div key={schedule.id} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{getDayName(schedule.dayOfWeek)}</span>
+                  <span className="text-sm text-green-600 font-medium">
+                    {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-sm text-gray-500 text-center py-2">
+                No hay horarios disponibles
+              </div>
+            )}
           </div>
         </div>
 

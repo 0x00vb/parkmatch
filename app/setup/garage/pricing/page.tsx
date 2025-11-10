@@ -97,7 +97,7 @@ export default function GaragePricingPage() {
     try {
       // Store pricing data in sessionStorage for next step
       sessionStorage.setItem("garagePricing", JSON.stringify(data));
-      router.push("/setup/garage/photos");
+      router.push("/setup/garage/availability");
     } catch (error) {
       alert("Error al guardar los precios");
     } finally {
@@ -134,7 +134,7 @@ export default function GaragePricingPage() {
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-lg font-medium text-gray-900 mb-4">Publicar un espacio</h1>
-            <ProgressBar currentStep={2} totalSteps={5} className="mb-6" />
+            <ProgressBar currentStep={3} totalSteps={6} className="mb-6" />
           </div>
 
           {/* Title */}

@@ -54,6 +54,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.sub = user.id; // Ensure sub is set to user ID
         token.role = user.role
       } else if (token.sub) {
         // Consultar rol actualizado de la BD en cada request

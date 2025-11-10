@@ -87,7 +87,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validate password if phone number is being changed (sensitive field)
-    if (phone !== currentUser.phone) {
+    // Only require password if user already has a phone number (not initial setup)
+    if (phone !== currentUser.phone && currentUser.phone !== null) {
       if (!currentPassword) {
         return NextResponse.json(
           { message: "Se requiere contraseña actual para cambiar el teléfono" },
@@ -95,12 +96,15 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      const isValidPassword = await bcrypt.compare(currentPassword, currentUser.password);
-      if (!isValidPassword) {
-        return NextResponse.json(
-          { message: "Contraseña actual incorrecta" },
-          { status: 400 }
-        );
+      // If user doesn't have a password (OAuth user), skip password validation
+      if (currentUser.password) {
+        const isValidPassword = await bcrypt.compare(currentPassword, currentUser.password);
+        if (!isValidPassword) {
+          return NextResponse.json(
+            { message: "Contraseña actual incorrecta" },
+            { status: 400 }
+          );
+        }
       }
     }
 

@@ -331,7 +331,7 @@ export default function GarageLocationPage() {
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-lg font-medium text-gray-900 mb-4">Publicar un espacio</h1>
-            <ProgressBar currentStep={0} totalSteps={5} className="mb-6" />
+            <ProgressBar currentStep={1} totalSteps={6} className="mb-6" />
           </div>
 
           {/* Title */}

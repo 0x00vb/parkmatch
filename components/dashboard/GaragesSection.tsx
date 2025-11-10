@@ -19,6 +19,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNotificationActions } from "@/lib/hooks/useNotifications";
 
+interface AvailabilitySchedule {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
 interface Garage {
   id: string;
   address: string;
@@ -34,6 +42,7 @@ interface Garage {
   images: string[];
   isActive: boolean;
   createdAt: string;
+  availabilitySchedules?: AvailabilitySchedule[];
 }
 
 export default function GaragesSection() {

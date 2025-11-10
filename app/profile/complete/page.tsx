@@ -23,6 +23,16 @@ export default function CompleteProfilePage() {
   const router = useRouter();
   const { data: session, status, update } = useSession();
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    watch,
+  } = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+    mode: "onChange",
+  });
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
@@ -44,16 +54,6 @@ export default function CompleteProfilePage() {
     return null;
   }
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isValid },
-    watch,
-  } = useForm<ProfileForm>({
-    resolver: zodResolver(profileSchema),
-    mode: "onChange",
-  });
-
   const watchedFields = watch();
   const allFieldsFilled = watchedFields.firstName && watchedFields.lastName && watchedFields.phone;
 
@@ -62,7 +62,7 @@ export default function CompleteProfilePage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/user/profile", {
+      const response = await fetch("/api/user/complete-profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -71,6 +71,8 @@ export default function CompleteProfilePage() {
           phone: data.phone,
         }),
       });
+
+      const result = await response.json();
 
       if (response.ok) {
         // Update session with new profile data
@@ -87,10 +89,11 @@ export default function CompleteProfilePage() {
           router.push("/setup/vehicles");
         }
       } else {
-        alert("Error al actualizar el perfil");
+        alert(result.message || "Error al completar el perfil");
       }
     } catch (error) {
-      alert("Error al actualizar el perfil");
+      console.error("Error completing profile:", error);
+      alert("Error al completar el perfil");
     } finally {
       setIsLoading(false);
     }

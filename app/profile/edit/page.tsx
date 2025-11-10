@@ -275,7 +275,7 @@ export default function EditProfilePage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {profileData.emailVerified ? (
-                    <CheckCircleSolid className="w-5 h-5 text-green-600" />
+                    <CheckCircleIcon className="w-5 h-5 text-green-600" />
                   ) : (
                     <XCircleIcon className="w-5 h-5 text-red-600" />
                   )}

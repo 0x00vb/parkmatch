@@ -6,14 +6,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useSession } from "next-auth/react";
-import { 
+import {
   ArrowLeftIcon,
-  HomeIcon, 
-  ShieldCheckIcon, 
-  KeyIcon, 
+  HomeIcon,
+  ShieldCheckIcon,
+  KeyIcon,
   WifiIcon,
   CameraIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  ClockIcon
 } from "@heroicons/react/24/outline";
 import { useNotificationActions } from "@/lib/hooks/useNotifications";
 
@@ -35,6 +36,14 @@ const garageEditSchema = z.object({
 
 type GarageEditForm = z.infer<typeof garageEditSchema>;
 
+interface AvailabilitySchedule {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
 interface Garage {
   id: string;
   address: string;
@@ -49,6 +58,7 @@ interface Garage {
   rules?: string;
   images: string[];
   isActive: boolean;
+  availabilitySchedules?: AvailabilitySchedule[];
 }
 
 export default function GarageEditPage() {
@@ -155,6 +165,15 @@ export default function GarageEditPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getDayName = (dayOfWeek: number) => {
+    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return days[dayOfWeek];
+  };
+
+  const formatTime = (time: string) => {
+    return time.substring(0, 5); // Remove seconds if present
   };
 
   if (status === "loading" || fetchingGarage) {
@@ -467,6 +486,34 @@ export default function GarageEditPage() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
               />
             </div>
+
+            {/* Availability Schedules */}
+            {garage.availabilitySchedules && garage.availabilitySchedules.length > 0 && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <ClockIcon className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-sm font-medium text-gray-900">Horarios disponibles</h3>
+                </div>
+                <div className="space-y-2">
+                  {garage.availabilitySchedules
+                    .filter(schedule => schedule.isActive)
+                    .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+                    .map((schedule) => (
+                      <div key={schedule.id} className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-gray-700">
+                          {getDayName(schedule.dayOfWeek)}
+                        </span>
+                        <span className="text-gray-600">
+                          {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                {garage.availabilitySchedules.filter(schedule => schedule.isActive).length === 0 && (
+                  <p className="text-sm text-gray-500">No hay horarios configurados</p>
+                )}
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="pt-4">

@@ -610,6 +610,74 @@ export async function invalidateReservationCache(
 }
 
 /**
+ * Check if a time slot is within the garage's availability schedule
+ */
+export async function checkGarageScheduleAvailability(
+  garageId: string,
+  startTime: Date,
+  endTime: Date
+): Promise<{ available: boolean; errors: string[] }> {
+  try {
+    // Get availability schedules for this garage
+    const availabilitySchedules = await prisma.availabilitySchedule.findMany({
+      where: {
+        garageId,
+        isActive: true,
+      },
+      orderBy: {
+        dayOfWeek: 'asc',
+      },
+    });
+
+    if (availabilitySchedules.length === 0) {
+      return {
+        available: false,
+        errors: ["Este garage no tiene horarios de disponibilidad configurados"]
+      };
+    }
+
+    const dayOfWeek = startTime.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const requestStartTime = startTime.toTimeString().slice(0, 5); // HH:MM format
+    const requestEndTime = endTime.toTimeString().slice(0, 5); // HH:MM format
+
+    // Find schedules for the requested day
+    const daySchedules = availabilitySchedules.filter(schedule => schedule.dayOfWeek === dayOfWeek);
+
+    if (daySchedules.length === 0) {
+      const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+      return {
+        available: false,
+        errors: [`Este garage no está disponible los ${dayNames[dayOfWeek]}s`]
+      };
+    }
+
+    // Check if the requested time slot fits within any of the available schedules
+    for (const schedule of daySchedules) {
+      const scheduleStart = schedule.startTime;
+      const scheduleEnd = schedule.endTime;
+
+      // Check if the entire requested time slot is within this schedule
+      if (requestStartTime >= scheduleStart && requestEndTime <= scheduleEnd) {
+        return { available: true, errors: [] };
+      }
+    }
+
+    // If we get here, the time slot doesn't fit any available schedule
+    return {
+      available: false,
+      errors: [`El horario solicitado (${requestStartTime} - ${requestEndTime}) no está disponible. Horarios disponibles para este día: ${daySchedules.map(s => `${s.startTime} - ${s.endTime}`).join(', ')}`]
+    };
+
+  } catch (error) {
+    console.error("Error checking garage schedule availability:", error);
+    return {
+      available: false,
+      errors: ["Error al verificar la disponibilidad del horario"]
+    };
+  }
+}
+
+/**
  * Validate reservation time constraints
  */
 export function validateReservationTime(startTime: Date, endTime: Date): {

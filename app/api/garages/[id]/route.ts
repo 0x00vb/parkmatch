@@ -29,7 +29,7 @@ async function getGarage(
 ) {
   const session = await requireOwner(request);
   const { id } = await params;
-  
+
   logInfo("Fetching garage details", {
     garageId: id,
     userId: session?.user?.id
@@ -40,6 +40,11 @@ async function getGarage(
     where: {
       id: id,
       userId: session!.user.id,
+    },
+    include: {
+      availabilitySchedules: {
+        orderBy: { dayOfWeek: 'asc' },
+      },
     },
   });
 
