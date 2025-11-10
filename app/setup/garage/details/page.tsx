@@ -121,8 +121,8 @@ export default function GarageDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-8">
+      <div className="mx-auto max-w-sm md:max-w-2xl lg:max-w-4xl bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-12 pt-8 md:pt-6 lg:pt-8">
           {/* Back Button */}
           <div className="mb-6">
             <button
@@ -185,7 +185,7 @@ export default function GarageDetailsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Altura y medidas
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3 md:gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Altura</label>
                   <div className="relative">
@@ -245,7 +245,7 @@ export default function GarageDetailsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Seguridad
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <button
                   type="button"
                   onClick={() => setValue("hasGate", !watchedHasGate)}
@@ -278,7 +278,7 @@ export default function GarageDetailsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Acceso
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <button
                   type="button"
                   onClick={() => setValue("accessType", "REMOTE_CONTROL")}
@@ -321,11 +321,11 @@ export default function GarageDetailsPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3 mt-8">
+            <div className="space-y-3 md:flex md:space-y-0 md:space-x-4 md:justify-end mt-8 pb-0 md:pb-8">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50"
+                className="w-full md:w-auto md:min-w-[200px] bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50"
               >
                 {isLoading ? "Guardando..." : "Siguiente"}
               </button>
@@ -335,7 +335,7 @@ export default function GarageDetailsPage() {
                 <button
                   type="button"
                   onClick={handleSkip}
-                  className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+                  className="w-full md:w-auto md:min-w-[200px] border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
                 >
                   Omitir por ahora
                 </button>

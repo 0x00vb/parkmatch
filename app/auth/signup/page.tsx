@@ -65,8 +65,8 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-12">
+      <div className="mx-auto max-w-sm md:max-w-md lg:max-w-lg bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-10 pt-12 md:pt-8 lg:pt-10 pb-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">

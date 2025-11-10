@@ -106,8 +106,8 @@ export default function CompleteProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-8">
+      <div className="mx-auto max-w-sm md:max-w-md lg:max-w-lg bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-10 pt-8 md:pt-6 lg:pt-8">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-lg font-medium text-gray-900 mb-4">Datos personales</h1>
@@ -126,36 +126,38 @@ export default function CompleteProfilePage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre
-              </label>
-              <input
-                {...register("firstName")}
-                type="text"
-                id="firstName"
-                placeholder="Tu nombre"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              {errors.firstName && (
-                <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
-              )}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre
+                </label>
+                <input
+                  {...register("firstName")}
+                  type="text"
+                  id="firstName"
+                  placeholder="Tu nombre"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                {errors.firstName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
+                )}
+              </div>
 
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                Apellido
-              </label>
-              <input
-                {...register("lastName")}
-                type="text"
-                id="lastName"
-                placeholder="Tu apellido"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              {errors.lastName && (
-                <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
-              )}
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Apellido
+                </label>
+                <input
+                  {...register("lastName")}
+                  type="text"
+                  id="lastName"
+                  placeholder="Tu apellido"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                {errors.lastName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
+                )}
+              </div>
             </div>
 
             <div>
@@ -212,13 +214,15 @@ export default function CompleteProfilePage() {
             </div>
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={!allFieldsFilled || isLoading}
-              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-8"
-            >
-              {isLoading ? "Guardando..." : "Guardar y continuar"}
-            </button>
+            <div className="mt-8 pb-0 md:pb-8">
+              <button
+                type="submit"
+                disabled={!allFieldsFilled || isLoading}
+                className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Guardando..." : "Guardar y continuar"}
+              </button>
+            </div>
           </form>
         </div>
       </div>

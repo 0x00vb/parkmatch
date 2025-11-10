@@ -6,7 +6,7 @@ import { TruckIcon, HomeIcon } from "@heroicons/react/24/outline";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
+      <div className="mx-auto max-w-sm md:max-w-2xl lg:max-w-4xl xl:max-w-5xl bg-white min-h-screen">
         {/* Header */}
         <div className="px-6 pt-12 pb-8">
           <div className="flex items-center gap-2 mb-8">

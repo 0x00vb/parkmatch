@@ -42,7 +42,7 @@ export default function AuthErrorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="mx-auto max-w-md bg-white rounded-lg shadow-lg p-8">
+      <div className="mx-auto max-w-md md:max-w-lg bg-white rounded-lg md:rounded-2xl shadow-lg md:shadow-xl p-8 md:p-10 m-4">
         <div className="text-center">
           {/* Error Icon */}
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">

@@ -179,8 +179,8 @@ export default function GarageAvailabilityPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-8">
+      <div className="mx-auto max-w-sm md:max-w-2xl lg:max-w-4xl bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-12 pt-8 md:pt-6 lg:pt-8">
           {/* Back Button */}
           <div className="mb-6">
             <button
@@ -342,7 +342,7 @@ export default function GarageAvailabilityPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3 mt-8">
+            <div className="space-y-3 mt-8 pb-0 md:pb-8">
               <button
                 type="submit"
                 disabled={isLoading}

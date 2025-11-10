@@ -36,7 +36,7 @@ export default function SetupCompletePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500">
-      <div className="mx-auto max-w-sm bg-white min-h-screen flex items-center justify-center">
+      <div className="mx-auto max-w-sm md:max-w-md lg:max-w-lg bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl flex items-center justify-center">
         <div className="px-6 text-center">
           {/* Car Illustration */}
           <div className="mb-8">

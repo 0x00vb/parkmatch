@@ -170,8 +170,8 @@ export default function AddVehiclePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-8">
+      <div className="mx-auto max-w-sm md:max-w-md lg:max-w-lg bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-10 pt-8 md:pt-6 lg:pt-8">
           {/* Back Button */}
           <div className="mb-6">
             <button
@@ -196,86 +196,89 @@ export default function AddVehiclePage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <label htmlFor="makeId" className="block text-sm font-medium text-gray-700 mb-2">
-                Marca
-              </label>
-              <select
-                {...register("makeId", { valueAsNumber: true })}
-                id="makeId"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">Seleccionar marca</option>
-                {makes.map((make) => (
-                  <option key={make.id} value={make.id}>
-                    {make.name}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div>
+                <label htmlFor="makeId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Marca
+                </label>
+                <select
+                  {...register("makeId", { valueAsNumber: true })}
+                  id="makeId"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="">Seleccionar marca</option>
+                  {makes.map((make) => (
+                    <option key={make.id} value={make.id}>
+                      {make.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.makeId && (
+                  <p className="text-red-500 text-sm mt-1">{errors.makeId.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="modelId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Modelo
+                </label>
+                <select
+                  {...register("modelId", { valueAsNumber: true })}
+                  id="modelId"
+                  disabled={!watchedMakeId || models.length === 0}
+                  onChange={(e) => handleModelChange(parseInt(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {watchedMakeId ? (models.length === 0 ? "Cargando modelos..." : "Seleccionar modelo") : "Primero selecciona una marca"}
                   </option>
-                ))}
-              </select>
-              {errors.makeId && (
-                <p className="text-red-500 text-sm mt-1">{errors.makeId.message}</p>
-              )}
+                  {models.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.modelId && (
+                  <p className="text-red-500 text-sm mt-1">{errors.modelId.message}</p>
+                )}
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="modelId" className="block text-sm font-medium text-gray-700 mb-2">
-                Modelo
-              </label>
-              <select
-                {...register("modelId", { valueAsNumber: true })}
-                id="modelId"
-                disabled={!watchedMakeId || models.length === 0}
-                onChange={(e) => handleModelChange(parseInt(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">
-                  {watchedMakeId ? (models.length === 0 ? "Cargando modelos..." : "Seleccionar modelo") : "Primero selecciona una marca"}
-                </option>
-                {models.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
-                  </option>
-                ))}
-              </select>
-              {errors.modelId && (
-                <p className="text-red-500 text-sm mt-1">{errors.modelId.message}</p>
-              )}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div>
+                <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
+                  Año (opcional)
+                </label>
+                <input
+                  {...register("year", { valueAsNumber: true })}
+                  type="number"
+                  id="year"
+                  placeholder="Ej: 2020"
+                  min="1990"
+                  max={new Date().getFullYear() + 1}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                {errors.year && (
+                  <p className="text-red-500 text-sm mt-1">{errors.year.message}</p>
+                )}
+              </div>
 
-
-            <div>
-              <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
-                Año (opcional)
-              </label>
-              <input
-                {...register("year", { valueAsNumber: true })}
-                type="number"
-                id="year"
-                placeholder="Ej: 2020"
-                min="1990"
-                max={new Date().getFullYear() + 1}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              {errors.year && (
-                <p className="text-red-500 text-sm mt-1">{errors.year.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="licensePlate" className="block text-sm font-medium text-gray-700 mb-2">
-                Patente
-              </label>
-              <input
-                {...register("licensePlate")}
-                type="text"
-                id="licensePlate"
-                placeholder="Ej: AB123CD"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
-                style={{ textTransform: "uppercase" }}
-              />
-              {errors.licensePlate && (
-                <p className="text-red-500 text-sm mt-1">{errors.licensePlate.message}</p>
-              )}
+              <div>
+                <label htmlFor="licensePlate" className="block text-sm font-medium text-gray-700 mb-2">
+                  Patente
+                </label>
+                <input
+                  {...register("licensePlate")}
+                  type="text"
+                  id="licensePlate"
+                  placeholder="Ej: AB123CD"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+                  style={{ textTransform: "uppercase" }}
+                />
+                {errors.licensePlate && (
+                  <p className="text-red-500 text-sm mt-1">{errors.licensePlate.message}</p>
+                )}
+              </div>
             </div>
 
             {/* Selected Model Info */}
@@ -300,13 +303,15 @@ export default function AddVehiclePage() {
             )}
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 mt-8"
-            >
-              {isLoading ? "Añadiendo vehículo..." : "Añadir vehículo"}
-            </button>
+            <div className="mt-8 pb-0 md:pb-8">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? "Añadiendo vehículo..." : "Añadir vehículo"}
+              </button>
+            </div>
           </form>
         </div>
       </div>

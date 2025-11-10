@@ -112,17 +112,35 @@ export default function DashboardPage() {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
-      <div className="mx-auto w-full max-w-sm bg-white min-h-screen flex flex-col relative overflow-hidden">
+      <div className="mx-auto w-full max-w-sm md:max-w-2xl lg:max-w-4xl xl:max-w-7xl bg-white min-h-screen flex flex-col md:flex-row relative overflow-hidden">
+        {/* Desktop Sidebar Navigation */}
+        <div className="hidden md:flex md:flex-col md:w-64 lg:w-72 xl:w-80 bg-white border-r border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">P</span>
+              </div>
+              <span className="text-xl font-semibold text-gray-900">ParkMatch</span>
+            </div>
+          </div>
+          <BottomNavigation 
+            activeSection={activeSection} 
+            onSectionChange={setActiveSection} 
+          />
+        </div>
+
         {/* Main Content */}
-        <div className="flex-1 flex flex-col pb-16 h-full">
+        <div className="flex-1 flex flex-col pb-16 md:pb-0 h-full">
           {renderActiveSection()}
         </div>
 
-        {/* Bottom Navigation */}
-        <BottomNavigation 
-          activeSection={activeSection} 
-          onSectionChange={setActiveSection} 
-        />
+        {/* Mobile Bottom Navigation */}
+        <div className="md:hidden">
+          <BottomNavigation 
+            activeSection={activeSection} 
+            onSectionChange={setActiveSection} 
+          />
+        </div>
       </div>
     </div>
   );

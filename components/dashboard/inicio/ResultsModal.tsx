@@ -63,13 +63,13 @@ export default function ResultsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="w-full max-w-sm bg-white rounded-t-2xl max-h-1/2 mb-18 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+      <div className="w-full max-w-sm md:max-w-2xl lg:max-w-3xl bg-white rounded-t-2xl md:rounded-2xl max-h-1/2 md:max-h-3/4 mb-18 md:mb-0 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out">
         {/* Modal Header */}
         <ResultsHeader title="Cocheras cercanas" onClose={onClose} />
 
         {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto max-h-96">
+        <div className="flex-1 overflow-y-auto max-h-96 md:max-h-[500px] lg:max-h-[600px]">
           {results.length > 0 ? (
             <div className="divide-y divide-gray-100">
               {results.map((result, index) => {

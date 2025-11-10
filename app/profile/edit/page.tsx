@@ -162,8 +162,8 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-8">
+      <div className="mx-auto max-w-sm md:max-w-md lg:max-w-lg bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-10 pt-8 md:pt-6 lg:pt-8">
           {/* Header */}
           <div className="flex items-center mb-8">
             <button
@@ -318,13 +318,15 @@ export default function EditProfilePage() {
             </div>
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-8"
-            >
-              {isLoading ? "Guardando..." : "Guardar cambios"}
-            </button>
+            <div className="mt-8 pb-0 md:pb-8">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
           </form>
         </div>
       </div>

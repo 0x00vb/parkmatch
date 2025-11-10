@@ -193,22 +193,23 @@ export default function PaymentMethodsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white p-4 shadow-sm border-b border-gray-200 flex items-center">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors mr-2"
-          aria-label="Volver"
-        >
-          <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
-        </button>
-        <h1 className="text-lg font-semibold text-gray-900 flex-1 text-center mr-6">
-          Medios de Pago
-        </h1>
-      </div>
+      <div className="mx-auto max-w-sm md:max-w-2xl lg:max-w-4xl bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        {/* Header */}
+        <div className="bg-white p-4 md:p-6 lg:p-8 shadow-sm border-b border-gray-200 flex items-center md:rounded-t-2xl">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors mr-2"
+            aria-label="Volver"
+          >
+            <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
+          </button>
+          <h1 className="text-lg font-semibold text-gray-900 flex-1 text-center mr-6">
+            Medios de Pago
+          </h1>
+        </div>
 
-      {/* List */}
-      <div className="mx-4 mt-4">
+        {/* List */}
+        <div className="mx-4 md:mx-6 lg:mx-8 mt-4">
         {loading ? (
           <div className="bg-white rounded-xl p-6 shadow-sm text-center text-gray-600">
             Cargando...
@@ -410,6 +411,7 @@ export default function PaymentMethodsPage() {
             </form>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

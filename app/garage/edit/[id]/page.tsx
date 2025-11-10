@@ -193,8 +193,8 @@ export default function GarageEditPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-8">
+      <div className="mx-auto max-w-sm md:max-w-2xl lg:max-w-4xl bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-12 pt-8 md:pt-6 lg:pt-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <button
@@ -219,38 +219,39 @@ export default function GarageEditPage() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Address */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                Dirección
-              </label>
-              <input
-                {...register("address")}
-                type="text"
-                id="address"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ej: Av. Corrientes 1234"
-              />
-              {errors.address && (
-                <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
-              )}
-            </div>
+            {/* Address and City */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                  Dirección
+                </label>
+                <input
+                  {...register("address")}
+                  type="text"
+                  id="address"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Ej: Av. Corrientes 1234"
+                />
+                {errors.address && (
+                  <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
+                )}
+              </div>
 
-            {/* City */}
-            <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                Ciudad
-              </label>
-              <input
-                {...register("city")}
-                type="text"
-                id="city"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ciudad"
-              />
-              {errors.city && (
-                <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
-              )}
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                  Ciudad
+                </label>
+                <input
+                  {...register("city")}
+                  type="text"
+                  id="city"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Ciudad"
+                />
+                {errors.city && (
+                  <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
+                )}
+              </div>
             </div>
 
             {/* Type Selection */}
@@ -349,7 +350,7 @@ export default function GarageEditPage() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Características
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <button
                   type="button"
                   onClick={() => setValue("hasGate", !watchedHasGate)}
@@ -382,7 +383,7 @@ export default function GarageEditPage() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Tipo de acceso
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <button
                   type="button"
                   onClick={() => setValue("accessType", "REMOTE_CONTROL")}
@@ -416,7 +417,7 @@ export default function GarageEditPage() {
                 <CurrencyDollarIcon className="w-5 h-5 inline mr-2" />
                 Precios (ARS)
               </label>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Precio por hora</label>
                   <div className="relative">
@@ -516,7 +517,7 @@ export default function GarageEditPage() {
             )}
 
             {/* Submit Button */}
-            <div className="pt-4">
+            <div className="pt-4 pb-0 md:pb-8">
               <button
                 type="submit"
                 disabled={isLoading}

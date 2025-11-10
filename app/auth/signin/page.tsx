@@ -54,8 +54,8 @@ export default function SigninPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-12">
+      <div className="mx-auto max-w-sm md:max-w-md lg:max-w-lg bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-10 pt-12 md:pt-8 lg:pt-10 pb-8">
           {/* Back Button */}
           <div className="mb-8">
             <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">

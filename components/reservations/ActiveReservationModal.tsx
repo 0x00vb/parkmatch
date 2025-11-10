@@ -247,27 +247,27 @@ export default function ActiveReservationModal({
   // Render minimized state
   if (isMinimized) {
     return (
-      <div className="fixed bottom-22 left-1/2 transform -translate-x-1/2 z-50">
+      <div className="fixed bottom-22 md:bottom-6 left-1/2 transform -translate-x-1/2 z-50">
         <button
           onClick={handleExpand}
-          className="bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 flex items-center gap-2 hover:shadow-xl transition-all duration-300 animate-slide-down"
+          className="bg-white rounded-full px-4 py-2 md:px-6 md:py-3 shadow-lg border border-gray-200 flex items-center gap-2 hover:shadow-xl transition-all duration-300 animate-slide-down"
         >
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <ClockIcon className="w-4 h-4 text-green-600" />
-          <span className="text-sm font-medium text-gray-900">
+          <ClockIcon className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+          <span className="text-sm md:text-base font-medium text-gray-900">
             {getMinimizedTimeDisplay()}
           </span>
-          <ChevronUpIcon className="w-4 h-4 text-gray-400" />
+          <ChevronUpIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 flex items-end justify-center z-50 pointer-events-none">
+    <div className="fixed inset-0 flex items-end md:items-center justify-center z-50 pointer-events-none">
       <div 
         ref={modalRef}
-        className="bg-white rounded-t-2xl w-full max-w-sm mx-auto animate-slide-up shadow-2xl pointer-events-auto max-h-[85vh] overflow-hidden mb-16"
+        className="bg-white rounded-t-2xl md:rounded-2xl w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto animate-slide-up shadow-2xl pointer-events-auto max-h-[85vh] md:max-h-[80vh] overflow-hidden mb-16 md:mb-0"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">

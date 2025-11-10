@@ -314,8 +314,8 @@ export default function GarageLocationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
-        <div className="px-6 pt-8">
+      <div className="mx-auto max-w-sm md:max-w-2xl lg:max-w-4xl bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl">
+        <div className="px-6 md:px-8 lg:px-12 pt-8 md:pt-6 lg:pt-8">
           {/* Back Button */}
           <div className="mb-6">
             <button
@@ -406,7 +406,7 @@ export default function GarageLocationPage() {
           {/* Map Section */}
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Confirmar en el mapa</h3>
-            <div className="w-full h-48 bg-gray-200 rounded-xl overflow-hidden relative">
+            <div className="w-full h-48 md:h-64 lg:h-80 bg-gray-200 rounded-xl overflow-hidden relative">
               {mapLoaded && typeof window !== 'undefined' ? (
                 <MapContainer
                   center={[locationData.latitude, locationData.longitude]}
@@ -451,11 +451,11 @@ export default function GarageLocationPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3">
+          <div className="space-y-3 md:flex md:space-y-0 md:space-x-4 md:justify-end pb-0 md:pb-8">
             <button
               onClick={handleContinue}
               disabled={!locationData.address.trim() || isLoading}
-              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full md:w-auto md:min-w-[200px] bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Cargando..." : "Siguiente"}
             </button>
@@ -464,7 +464,7 @@ export default function GarageLocationPage() {
             {!isFromDashboard && (
               <button
                 onClick={handleSkip}
-                className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
+                className="w-full md:w-auto md:min-w-[200px] border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
               >
                 Omitir por ahora
               </button>

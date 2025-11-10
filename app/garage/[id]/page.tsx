@@ -291,7 +291,7 @@ export default function GarageDetailsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
+      <div className="mx-auto max-w-sm md:max-w-2xl lg:max-w-4xl bg-white min-h-screen">
         {/* Header */}
         <div className="relative">
         <button
@@ -302,7 +302,7 @@ export default function GarageDetailsPage() {
         </button>
 
         {/* Image Carousel */}
-        <div className="relative h-40vh bg-gray-200">
+        <div className="relative h-64 md:h-80 lg:h-96 bg-gray-200">
           {garage.images.length > 0 ? (
             <>
               <img
@@ -342,7 +342,10 @@ export default function GarageDetailsPage() {
       </div>
 
       {/* Content */}
-      <div className="px-6 py-4">
+      <div className="px-6 md:px-8 lg:px-12 py-4 md:py-6">
+        <div className="md:grid md:grid-cols-1 lg:grid-cols-3 lg:gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2">
         {/* Title and Rating */}
         <div className="mb-3">
           <h1 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
@@ -425,7 +428,7 @@ export default function GarageDetailsPage() {
             Ubicación
           </h2>
 
-          <div className="h-48vh bg-gray-200 rounded-lg overflow-hidden">
+          <div className="h-48 md:h-64 lg:h-80 bg-gray-200 rounded-lg overflow-hidden">
             {isMapLoaded ? (
               <MapContainer
                 center={[garage.latitude, garage.longitude]}
@@ -452,7 +455,7 @@ export default function GarageDetailsPage() {
         </div>
 
         {/* Reviews */}
-        <div className="mb-16">
+        <div className="mb-16 lg:mb-8">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base font-semibold text-gray-900">
               Reseñas
@@ -485,10 +488,48 @@ export default function GarageDetailsPage() {
             ))}
           </div>
         </div>
+          </div>
+
+          {/* Sidebar - Desktop only */}
+          <div className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-6">
+              {/* Price Card */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  {garage.hourlyPrice && (
+                    <div className="text-left">
+                      <div className="text-sm text-gray-500">Precio por hora</div>
+                      <div className="text-2xl font-bold text-gray-900">${garage.hourlyPrice}</div>
+                    </div>
+                  )}
+                  <div className="text-right">
+                    <div className="flex items-center text-sm text-gray-600">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <StarSolidIcon
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= averageRating ? 'text-yellow-400' : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                      <span className="ml-1">({reviews.length})</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleReserve}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold text-base hover:bg-green-700 transition-colors active:bg-green-800"
+                >
+                  Reservar ahora
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Action Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 shadow-lg safe-area-pb z-50">
+      {/* Bottom Action Button - Mobile only */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 shadow-lg safe-area-pb z-50">
         <div className="max-w-sm mx-auto">
           <div className="flex items-center justify-between mb-2">
             {garage.hourlyPrice && (
