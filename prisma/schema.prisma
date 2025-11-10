@@ -59,6 +59,7 @@ model User {
   vehicles      Vehicle[]
   garages       Garage[]
   reservations  Reservation[]
+  paymentMethods PaymentMethod[]
 }
 
 model VerificationToken {
@@ -155,4 +156,41 @@ enum ReservationStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  userId      String
+  brand       String
+  last4       String
+  expMonth    Int
+  expYear     Int
+  holderName  String?
+  network     String?
+  default     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Make {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique @db.VarChar(100)
+  models Model[]
+
+  @@map("makes")
+}
+
+model Model {
+  id        Int    @id @default(autoincrement())
+  make_id   Int
+  name      String @db.VarChar(100)
+  length_mm Int?
+  width_mm  Int?
+  height_mm Int?
+  make      Make   @relation(fields: [make_id], references: [id], onDelete: Cascade)
+
+  @@unique([make_id, name])
+  @@map("models")
 }

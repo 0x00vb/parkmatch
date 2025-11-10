@@ -1,0 +1,333 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  ArrowLeftIcon,
+  EnvelopeIcon,
+  ShieldCheckIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  CheckCircleIcon,
+  XCircleIcon
+} from "@heroicons/react/24/outline";
+
+const profileSchema = z.object({
+  firstName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  lastName: z.string().min(2, "El apellido debe tener al menos 2 caracteres"),
+  phone: z.string().min(10, "El teléfono debe tener al menos 10 dígitos"),
+  currentPassword: z.string().optional(),
+});
+
+type ProfileForm = z.infer<typeof profileSchema>;
+
+interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  name: string | null;
+  role: string;
+  emailVerified: boolean | null;
+  profileCompleted: boolean;
+  createdAt: string;
+}
+
+export default function EditProfilePage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [showPasswordField, setShowPasswordField] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const router = useRouter();
+  const { data: session, status, update } = useSession();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch("/api/user/profile");
+        if (response.ok) {
+          const data = await response.json();
+          setProfileData(data.user);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    if (status === "authenticated") {
+      fetchProfile();
+    }
+  }, [status]);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    watch,
+    setValue,
+    reset,
+  } = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+    mode: "onChange",
+  });
+
+  // Set form values when profile data is loaded
+  useEffect(() => {
+    if (profileData) {
+      reset({
+        firstName: profileData.firstName || "",
+        lastName: profileData.lastName || "",
+        phone: profileData.phone || "",
+      });
+    }
+  }, [profileData, reset]);
+
+  const watchedPhone = watch("phone");
+  const originalPhone = profileData?.phone || "";
+
+  // Show password field when phone changes
+  useEffect(() => {
+    if (watchedPhone && watchedPhone !== originalPhone) {
+      setShowPasswordField(true);
+    } else {
+      setShowPasswordField(false);
+      setValue("currentPassword", "");
+    }
+  }, [watchedPhone, originalPhone, setValue]);
+
+  const onSubmit = async (data: ProfileForm) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Update session with new profile data
+        await update({
+          name: `${data.firstName} ${data.lastName}`,
+        });
+
+        // Show success message and redirect
+        alert("Perfil actualizado exitosamente");
+        router.push("/dashboard");
+      } else {
+        alert(result.message || "Error al actualizar el perfil");
+      }
+    } catch (error) {
+      alert("Error al actualizar el perfil");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendVerification = () => {
+    setEmailVerificationSent(true);
+    // TODO: Implement actual email verification
+  };
+
+  if (status === "loading" || isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session || !profileData) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-sm bg-white min-h-screen">
+        <div className="px-6 pt-8">
+          {/* Header */}
+          <div className="flex items-center mb-8">
+            <button
+              onClick={() => router.back()}
+              className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+            </button>
+            <h1 className="text-lg font-semibold text-gray-900 ml-4">Editar Perfil</h1>
+          </div>
+
+          {/* Title */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Información Personal
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Actualizá tus datos personales cuando lo necesites.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre
+              </label>
+              <input
+                {...register("firstName")}
+                type="text"
+                id="firstName"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              {errors.firstName && (
+                <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                Apellido
+              </label>
+              <input
+                {...register("lastName")}
+                type="text"
+                id="lastName"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              {errors.lastName && (
+                <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Teléfono
+              </label>
+              <input
+                {...register("phone")}
+                type="tel"
+                id="phone"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              {errors.phone && (
+                <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+              )}
+              {showPasswordField && (
+                <p className="text-orange-600 text-sm mt-2 flex items-center">
+                  <ShieldCheckIcon className="w-4 h-4 mr-1" />
+                  Se requiere verificación para cambiar el teléfono
+                </p>
+              )}
+            </div>
+
+            {/* Password field for sensitive changes */}
+            {showPasswordField && (
+              <div>
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  Contraseña actual
+                </label>
+                <div className="relative">
+                  <input
+                    {...register("currentPassword")}
+                    type={showCurrentPassword ? "text" : "password"}
+                    id="currentPassword"
+                    placeholder="Ingresa tu contraseña actual"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showCurrentPassword ? (
+                      <EyeSlashIcon className="w-5 h-5" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+                {errors.currentPassword && (
+                  <p className="text-red-500 text-sm mt-1">{errors.currentPassword.message}</p>
+                )}
+              </div>
+            )}
+
+            {/* Email Verification Status */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {profileData.emailVerified ? (
+                    <CheckCircleSolid className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <XCircleIcon className="w-5 h-5 text-red-600" />
+                  )}
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {profileData.emailVerified ? "Email verificado" : "Email no verificado"}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {profileData.emailVerified
+                        ? "Tu dirección de correo está verificada"
+                        : "Verificá tu email para mayor seguridad"
+                      }
+                    </p>
+                  </div>
+                </div>
+                {!profileData.emailVerified && (
+                  <button
+                    type="button"
+                    onClick={handleSendVerification}
+                    disabled={emailVerificationSent}
+                    className="text-green-600 font-medium text-sm hover:text-green-700 disabled:text-gray-400"
+                  >
+                    {emailVerificationSent ? "ENVIADO" : "ENVIAR"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Two Factor Authentication Status */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <ShieldCheckIcon className="w-5 h-5 text-gray-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Autenticación de dos factores</p>
+                  <p className="text-sm text-gray-600">
+                    Próximamente: Añadí una capa extra de seguridad a tu cuenta
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-8"
+            >
+              {isLoading ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

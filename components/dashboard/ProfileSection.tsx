@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   UserIcon,
   CreditCardIcon,
@@ -12,6 +13,7 @@ import {
 
 export default function ProfileSection() {
   const { data: session } = useSession();
+  const router = useRouter();
 
   // Get real user data
   const userName = session?.user?.name || "Usuario";
@@ -57,7 +59,10 @@ export default function ProfileSection() {
           <h3 className="text-base font-semibold text-gray-900 mb-3">Cuenta</h3>
 
           {/* Información Personal */}
-          <button className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1">
+          <button
+            onClick={() => router.push("/profile/edit")}
+            className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
               <UserIcon className="w-5 h-5 text-green-600" />
             </div>
@@ -65,7 +70,10 @@ export default function ProfileSection() {
           </button>
 
           {/* Métodos de Pago */}
-          <button className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1">
+          <button
+            onClick={() => router.push("/profile/payment-methods")}
+            className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
               <CreditCardIcon className="w-5 h-5 text-green-600" />
             </div>
