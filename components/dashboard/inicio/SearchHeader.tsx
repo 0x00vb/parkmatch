@@ -87,25 +87,6 @@ export default function SearchHeader({
         )}
       </div>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={onToggleFilters}
-          className="flex items-center gap-1 px-3 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap"
-        >
-          <AdjustmentsHorizontalIcon className="h-4 w-4" />
-          Filtros
-        </button>
-        <button className="px-3 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap">
-          Ahora
-        </button>
-        <button className="px-3 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap">
-          Auto
-        </button>
-        <button className="px-3 py-2 bg-gray-100 rounded-full text-sm font-medium whitespace-nowrap">
-          Hasta $500
-        </button>
-      </div>
     </div>
   );
 }
