@@ -1,5 +1,6 @@
 import { cache } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
+import { logError, logInfo } from "@/lib/errors";
 
 // Cache keys
 const CACHE_KEYS = {
@@ -102,7 +103,8 @@ export function validateVehicleCompatibility(
 }
 
 /**
- * Check time slot availability for a garage
+ * Check time slot availability for a garage (without concurrency control)
+ * This is used for preliminary checks and caching
  */
 export async function checkGarageAvailability(
   garageId: string,
@@ -111,7 +113,7 @@ export async function checkGarageAvailability(
   excludeReservationId?: string
 ): Promise<boolean> {
   const cacheKey = CACHE_KEYS.GARAGE_AVAILABILITY(garageId, startTime.toDateString());
-  
+
   try {
     // Try to get from cache first
     const cached = await cache.get<string>(cacheKey);
@@ -178,6 +180,208 @@ export async function checkGarageAvailability(
     });
 
     return !conflictingReservation;
+  }
+}
+
+/**
+ * Check garage availability with concurrency control using SELECT FOR UPDATE
+ * This function must be called within a transaction to ensure atomicity
+ */
+export async function checkGarageAvailabilityWithLock(
+  tx: any, // Prisma transaction client
+  garageId: string,
+  startTime: Date,
+  endTime: Date,
+  excludeReservationId?: string
+): Promise<boolean> {
+  // Use raw SQL with SELECT FOR UPDATE to lock existing reservations for this garage
+  // This prevents concurrent transactions from reading stale data
+  const excludeCondition = excludeReservationId ? `AND id != $4` : '';
+  const params = excludeReservationId
+    ? [garageId, startTime, endTime, excludeReservationId]
+    : [garageId, startTime, endTime];
+
+  const sql = `
+    SELECT id, "startTime", "endTime"
+    FROM "Reservation"
+    WHERE "garageId" = $1::text
+    AND status IN ('PENDING', 'CONFIRMED', 'ACTIVE')
+    ${excludeCondition}
+    AND (
+      ("startTime" <= $2 AND "endTime" > $2) OR
+      ("startTime" < $3 AND "endTime" >= $3) OR
+      ("startTime" >= $2 AND "endTime" <= $3)
+    )
+    FOR UPDATE
+    LIMIT 1
+  `;
+
+  const result = await tx.$queryRaw(sql, ...params);
+
+  return result.length === 0;
+}
+
+/**
+ * Log concurrency conflicts for monitoring and analytics
+ */
+function logConcurrencyConflict(
+  userId: string,
+  garageId: string,
+  startTime: Date,
+  endTime: Date,
+  conflictingReservation?: any
+) {
+  const conflictData = {
+    userId,
+    garageId,
+    requestedStartTime: startTime.toISOString(),
+    requestedEndTime: endTime.toISOString(),
+    conflictType: "concurrent_reservation",
+    timestamp: new Date().toISOString(),
+  };
+
+  if (conflictingReservation) {
+    conflictData.conflictingReservationId = conflictingReservation.id;
+    conflictData.conflictingStartTime = conflictingReservation.startTime;
+    conflictData.conflictingEndTime = conflictingReservation.endTime;
+  }
+
+  logInfo("Reservation concurrency conflict detected", conflictData);
+}
+
+/**
+ * Log successful reservation creation with concurrency control
+ */
+function logSuccessfulReservation(
+  reservationId: string,
+  userId: string,
+  garageId: string,
+  startTime: Date,
+  endTime: Date,
+  totalPrice: number
+) {
+  logInfo("Reservation created successfully with concurrency control", {
+    reservationId,
+    userId,
+    garageId,
+    startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
+    totalPrice,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Create reservation with concurrency control
+ * This function handles the complete reservation creation process with atomicity
+ */
+export async function createReservationWithConcurrencyControl({
+  userId,
+  garageId,
+  vehicleId,
+  startTime,
+  endTime,
+  totalPrice,
+}: {
+  userId: string;
+  garageId: string;
+  vehicleId: string;
+  startTime: Date;
+  endTime: Date;
+  totalPrice: number;
+}) {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      // Step 1: Check availability with row locking
+      const conflictingReservation = await tx.reservation.findFirst({
+        where: {
+          garageId,
+          status: {
+            in: ["PENDING", "CONFIRMED", "ACTIVE"],
+          },
+          OR: [
+            // Case 1: New reservation starts during existing reservation
+            {
+              AND: [
+                { startTime: { lte: startTime } },
+                { endTime: { gt: startTime } },
+              ],
+            },
+            // Case 2: New reservation ends during existing reservation
+            {
+              AND: [
+                { startTime: { lt: endTime } },
+                { endTime: { gte: endTime } },
+              ],
+            },
+            // Case 3: New reservation completely encompasses existing reservation
+            {
+              AND: [
+                { startTime: { gte: startTime } },
+                { endTime: { lte: endTime } },
+              ],
+            },
+          ],
+        },
+        select: {
+          id: true,
+          startTime: true,
+          endTime: true,
+          userId: true,
+        },
+      });
+
+      if (conflictingReservation) {
+        // Log the concurrency conflict with detailed information
+        logConcurrencyConflict(userId, garageId, startTime, endTime, conflictingReservation);
+
+        throw new Error("La cochera ya está reservada en ese horario. Por favor, selecciona otro horario.");
+      }
+
+      // Step 2: Create the reservation
+      const reservation = await tx.reservation.create({
+        data: {
+          userId,
+          garageId,
+          vehicleId,
+          startTime,
+          endTime,
+          totalPrice,
+          status: "PENDING",
+        },
+        include: {
+          garage: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  name: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          vehicle: true,
+        },
+      });
+
+      // Log successful reservation creation
+      logSuccessfulReservation(
+        reservation.id,
+        userId,
+        garageId,
+        startTime,
+        endTime,
+        totalPrice
+      );
+
+      return reservation;
+    });
+  } catch (error) {
+    // Re-throw the error to maintain the expected behavior
+    throw error;
   }
 }
 

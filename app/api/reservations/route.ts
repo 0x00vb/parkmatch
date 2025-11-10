@@ -5,12 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 import { logError, logInfo } from "@/lib/errors";
-import { 
-  validateVehicleCompatibility, 
-  checkGarageAvailability, 
+import {
+  validateVehicleCompatibility,
+  checkGarageAvailability,
   calculateReservationPrice,
   validateReservationTime,
-  invalidateReservationCache
+  invalidateReservationCache,
+  createReservationWithConcurrencyControl
 } from "@/lib/reservations";
 
 // Validation schemas
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     if (!isAvailable) {
       return NextResponse.json(
-        { error: "Time slot not available" },
+        { error: "Este horario no esta disponible" },
         { status: 409 }
       );
     }
@@ -153,70 +154,14 @@ export async function POST(request: NextRequest) {
     );
     const totalPrice = priceCalculation.price;
 
-    // Create reservation with transaction to ensure consistency
-    const reservation = await prisma.$transaction(async (tx) => {
-      // Double-check availability within transaction
-      const conflictingReservation = await tx.reservation.findFirst({
-        where: {
-          garageId: validatedData.garageId,
-          status: {
-            in: ["PENDING", "CONFIRMED", "ACTIVE"],
-          },
-          OR: [
-            {
-              AND: [
-                { startTime: { lte: startTime } },
-                { endTime: { gt: startTime } },
-              ],
-            },
-            {
-              AND: [
-                { startTime: { lt: endTime } },
-                { endTime: { gte: endTime } },
-              ],
-            },
-            {
-              AND: [
-                { startTime: { gte: startTime } },
-                { endTime: { lte: endTime } },
-              ],
-            },
-          ],
-        },
-      });
-
-      if (conflictingReservation) {
-        throw new Error("Time slot no longer available");
-      }
-
-      // Create the reservation
-      return await tx.reservation.create({
-        data: {
-          userId: session.user.id,
-          garageId: validatedData.garageId,
-          vehicleId: validatedData.vehicleId,
-          startTime,
-          endTime,
-          totalPrice,
-          status: "PENDING",
-        },
-        include: {
-          garage: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  name: true,
-                  phone: true,
-                },
-              },
-            },
-          },
-          vehicle: true,
-        },
-      });
+    // Create reservation with concurrency control
+    const reservation = await createReservationWithConcurrencyControl({
+      userId: session.user.id,
+      garageId: validatedData.garageId,
+      vehicleId: validatedData.vehicleId,
+      startTime,
+      endTime,
+      totalPrice,
     });
 
     // Invalidate relevant caches
@@ -239,11 +184,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle specific transaction errors
-    if (error instanceof Error && error.message === "Time slot no longer available") {
-      return NextResponse.json(
-        { error: "Time slot no longer available" },
-        { status: 409 }
-      );
+    if (error instanceof Error) {
+      if (error.message === "Time slot no longer available" ||
+          error.message.includes("La cochera ya está reservada")) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 409 }
+        );
+      }
     }
 
     logError(error as Error, { context: "Error creating reservation" });

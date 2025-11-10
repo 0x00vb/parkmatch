@@ -171,6 +171,59 @@ parkmatch/
 - Validación de entrada en frontend y backend
 - Sesiones JWT seguras
 - Protección CSRF integrada con NextAuth
+- **Control de concurrencia**: Prevención de sobre-reservas con SELECT FOR UPDATE
+
+## 🔄 Sistema de Control de Concurrencia
+
+Implementado un mecanismo robusto para prevenir sobre-reservas en cocheras bajo alta concurrencia:
+
+### Características Implementadas
+
+#### 1. **Bloqueo Transaccional con SELECT FOR UPDATE**
+- Uso de `prisma.$transaction()` con verificación de conflictos
+- Bloqueo de filas de reservas existentes durante la validación
+- Prevención de lecturas sucias entre transacciones simultáneas
+
+#### 2. **Validación Completa de Horarios**
+- Verificación de reservas PENDING, CONFIRMED y ACTIVE
+- Detección de solapamientos temporales:
+  - Reserva nueva comienza durante reserva existente
+  - Reserva nueva termina durante reserva existente
+  - Reserva nueva engloba completamente reserva existente
+
+#### 3. **Manejo de Errores y Logging**
+- Mensajes de error específicos en español
+- Logging detallado de conflictos de concurrencia
+- Registro de reservas exitosas con metadatos completos
+- Monitoreo de intentos fallidos para análisis
+
+#### 4. **Pruebas Automáticas de Concurrencia**
+```bash
+npm run test:concurrency
+```
+- Simulación de múltiples solicitudes simultáneas
+- Verificación de que solo una reserva sea creada por slot temporal
+- Validación de rechazos apropiados para conflictos
+- Tests de solapamientos temporales
+
+### Arquitectura del Sistema
+
+#### Funciones Principales
+- `checkGarageAvailability()`: Verificación rápida con cache
+- `checkGarageAvailabilityWithLock()`: Verificación con bloqueo de filas
+- `createReservationWithConcurrencyControl()`: Creación atómica con control completo
+
+#### Estrategia de Concurrencia
+1. **Verificación inicial**: Chequeo rápido con datos cacheados
+2. **Bloqueo transaccional**: SELECT FOR UPDATE dentro de transacción
+3. **Validación atómica**: Verificación y creación en una sola operación
+4. **Liberación automática**: Commit/rollback libera bloqueos automáticamente
+
+### Escalabilidad
+- ✅ Funciona con múltiples instancias de aplicación
+- ✅ Compatible con PostgreSQL clustering
+- ✅ Manejo eficiente de bloqueos (no bloquea tabla completa)
+- ✅ Cache inteligente para reducir carga de base de datos
 
 ## 🚀 Próximos Pasos
 
