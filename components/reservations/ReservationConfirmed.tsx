@@ -81,7 +81,7 @@ export default function ReservationConfirmed({ reservation, onBack }: Reservatio
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-sm bg-white min-h-screen">
+      <div className="mx-auto max-w-sm bg-white min-h-screen h-full overflow-y-auto">
         {/* Header */}
         <ReservationHeader title="Confirmación de Reserva" onBack={onBack} />
 
