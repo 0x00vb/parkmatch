@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
-      <div className="mx-auto w-full max-w-sm md:max-w-2xl lg:max-w-4xl xl:max-w-7xl bg-white min-h-screen flex flex-col md:flex-row relative overflow-hidden">
+      <div className="mx-auto w-full bg-white min-h-screen flex flex-col md:flex-row relative overflow-hidden">
         {/* Desktop Sidebar Navigation */}
         <div className="hidden md:flex md:flex-col md:w-64 lg:w-72 xl:w-80 bg-white border-r border-gray-200">
           <div className="p-6 border-b border-gray-200">

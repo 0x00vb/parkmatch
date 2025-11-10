@@ -61,7 +61,7 @@ export default function SearchHeader({
   }, [onKeyDown]);
 
   return (
-    <div className="bg-white p-4 md:p-6 lg:p-8 shadow-sm shrink-0">
+    <div className="bg-white p-2 md:p-2 shadow-sm shrink-0">
       <div className="mb-4 relative max-w-full md:max-w-2xl lg:max-w-3xl mx-auto">
         <DebouncedInput
           value={searchQuery}

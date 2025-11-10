@@ -63,10 +63,18 @@ export default function ResultsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-      <div className="w-full max-w-sm md:max-w-2xl lg:max-w-3xl bg-white rounded-t-2xl md:rounded-2xl max-h-1/2 md:max-h-3/4 mb-18 md:mb-0 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out">
-        {/* Modal Header */}
-        <ResultsHeader title="Cocheras cercanas" onClose={onClose} />
+    <div className="fixed inset-0 z-50" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-gray-500 opacity-20"></div>
+
+      {/* Modal Container */}
+      <div className="relative z-10 flex items-end md:items-center justify-center w-full h-full">
+        <div
+          className="w-full max-w-md md:max-w-2xl lg:max-w-3xl bg-white rounded-t-2xl md:rounded-2xl max-h-1/2 md:max-h-3/4 mb-18 md:mb-0 overflow-hidden shadow-xl transform transition-transform duration-300 ease-out"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <ResultsHeader title="Cocheras cercanas" onClose={onClose} />
 
         {/* Modal Content */}
         <div className="flex-1 overflow-y-auto max-h-96 md:max-h-[500px] lg:max-h-[600px]">
@@ -187,6 +195,7 @@ export default function ResultsModal({
               </p>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
