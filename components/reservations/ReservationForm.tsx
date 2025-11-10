@@ -134,6 +134,7 @@ export default function ReservationForm({ garage, onBack, onSuccess }: Reservati
     }
   }, [session]);
 
+
   // Check vehicle compatibility
   const checkVehicleCompatibility = (vehicle: Vehicle) => {
     const issues: string[] = [];

@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { 
-  ArrowLeftIcon, 
+import { useSession } from "next-auth/react";
+import {
+  ArrowLeftIcon,
   StarIcon,
   MapPinIcon,
   ClockIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  CreditCardIcon,
+  XMarkIcon
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import dynamic from "next/dynamic";
@@ -69,6 +72,7 @@ interface Review {
 export default function GarageDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const { data: session } = useSession();
   const garageId = params.id as string;
 
   const [garage, setGarage] = useState<Garage | null>(null);
@@ -79,6 +83,8 @@ export default function GarageDetailsPage() {
   const [viewMode, setViewMode] = useState<"details" | "reservation" | "pending" | "confirmed">("details");
   const [currentReservationId, setCurrentReservationId] = useState<string | null>(null);
   const [currentReservation, setCurrentReservation] = useState<any>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [hasPaymentMethods, setHasPaymentMethods] = useState<boolean | null>(null);
 
   // Mock reviews data - replace with API call later
   const mockReviews: Review[] = [
@@ -133,6 +139,31 @@ export default function GarageDetailsPage() {
     }
   }, []);
 
+  // Fetch user's payment methods
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      try {
+        const response = await fetch('/api/payment-methods');
+        if (response.ok) {
+          const data = await response.json();
+          setHasPaymentMethods(data.methods && data.methods.length > 0);
+        } else {
+          // If payment methods service is not available, assume user has payment methods
+          // to avoid blocking reservations during development/migration periods
+          setHasPaymentMethods(true);
+        }
+      } catch (error) {
+        console.error('Error fetching payment methods:', error);
+        // Assume user has payment methods on error to avoid blocking
+        setHasPaymentMethods(true);
+      }
+    };
+
+    if (session?.user?.id) {
+      fetchPaymentMethods();
+    }
+  }, [session]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -173,6 +204,12 @@ export default function GarageDetailsPage() {
   };
 
   const handleReserve = () => {
+    // Check if user has payment methods
+    if (hasPaymentMethods === false) {
+      setShowPaymentModal(true);
+      return;
+    }
+
     setViewMode("reservation");
   };
 
@@ -188,6 +225,15 @@ export default function GarageDetailsPage() {
   const handleReservationConfirmed = (reservation: any) => {
     setCurrentReservation(reservation);
     setViewMode("confirmed");
+  };
+
+  const handleClosePaymentModal = () => {
+    setShowPaymentModal(false);
+  };
+
+  const handleGoToPaymentMethods = () => {
+    setShowPaymentModal(false);
+    router.push('/profile/payment-methods');
   };
 
   // Show reservation flow screens
@@ -451,6 +497,55 @@ export default function GarageDetailsPage() {
         </div>
       </div>
       </div>
+
+      {/* Payment Method Modal */}
+      {showPaymentModal && (
+        <>
+          <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
+          <div className="fixed inset-0 flex items-center justify-center z-500 p-4">
+            <div className="bg-white rounded-lg max-w-sm w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <CreditCardIcon className="w-6 h-6 text-red-500 mr-3" />
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Método de pago requerido
+                    </h3>
+                  </div>
+                  <button
+                    onClick={handleClosePaymentModal}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XMarkIcon className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Para realizar una reserva, necesitas tener al menos un método de pago registrado en tu cuenta. Esto nos permite procesar el pago de manera segura cuando confirmes tu reserva.
+                  </p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleClosePaymentModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleGoToPaymentMethods}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                  >
+                    Agregar método
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+      
+      </>
+      )}
     </div>
   );
 }
