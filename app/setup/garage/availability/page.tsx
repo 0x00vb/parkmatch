@@ -350,15 +350,6 @@ export default function GarageAvailabilityPage() {
               >
                 {isLoading ? "Guardando..." : "Siguiente"}
               </button>
-
-              {/* Skip Button */}
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="w-full border border-gray-300 text-gray-700 font-medium py-4 px-6 rounded-2xl hover:bg-gray-50 transition-colors"
-              >
-                Configurar después
-              </button>
             </div>
           </form>
         </div>
