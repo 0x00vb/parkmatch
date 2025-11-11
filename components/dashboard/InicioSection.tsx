@@ -478,6 +478,16 @@ export default function InicioSection() {
     }
   }, [userLocation, selectedLocation]);
 
+  // Recenter map to current user location when the location control is pressed
+  // This does not clear selectedLocation to avoid resetting filters/results.
+  useEffect(() => {
+    if (isManualLocationRequest && userLocation) {
+      setMapCenter({ lat: userLocation.lat, lng: userLocation.lng });
+      setZoom(16);
+      setIsManualLocationRequest(false);
+    }
+  }, [isManualLocationRequest, userLocation]);
+
   const handleGarageClick = (garageId: string) => {
     router.push(`/garage/${garageId}`);
   };
