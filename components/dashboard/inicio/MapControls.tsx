@@ -6,9 +6,10 @@ interface MapControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onLocationClick: () => void;
+  isGettingLocation?: boolean;
 }
 
-export default function MapControls({ onZoomIn, onZoomOut, onLocationClick }: MapControlsProps) {
+export default function MapControls({ onZoomIn, onZoomOut, onLocationClick, isGettingLocation }: MapControlsProps) {
   return (
     <>
       {/* Map Controls */}
@@ -30,9 +31,14 @@ export default function MapControls({ onZoomIn, onZoomOut, onLocationClick }: Ma
       {/* Location Button */}
       <button
         onClick={onLocationClick}
-        className="absolute right-4 md:right-6 lg:right-8 bottom-4 md:bottom-6 lg:bottom-8 w-12 h-12 md:w-14 md:h-14 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors z-10"
+        disabled={isGettingLocation}
+        className="absolute right-4 md:right-6 lg:right-8 bottom-4 md:bottom-6 lg:bottom-8 w-12 h-12 md:w-14 md:h-14 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors z-10 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <MapPinIcon className="h-6 w-6 md:h-7 md:w-7 text-gray-600" />
+        {isGettingLocation ? (
+          <div className="animate-spin rounded-full h-6 w-6 md:h-7 md:w-7 border-b-2 border-green-500"></div>
+        ) : (
+          <MapPinIcon className="h-6 w-6 md:h-7 md:w-7 text-gray-600" />
+        )}
       </button>
     </>
   );

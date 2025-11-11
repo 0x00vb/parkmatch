@@ -35,7 +35,7 @@ export default function SetupCompletePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500">
+    <div className="min-h-screen ">
       <div className="mx-auto max-w-sm md:max-w-md lg:max-w-lg bg-white min-h-screen md:min-h-0 md:my-8 md:rounded-2xl md:shadow-xl flex items-center justify-center">
         <div className="px-6 text-center">
           {/* Car Illustration */}
@@ -61,7 +61,7 @@ export default function SetupCompletePage() {
           {/* Action Button */}
           <button
             onClick={handleContinue}
-            className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors text-lg"
+            className="w-full bg-green-500 text-white font-semibold py-4 px-6 rounded-2xl hover:bg-green-600 transition-colors text-lg md:mb-5"
           >
             Buscar estacionamiento
           </button>

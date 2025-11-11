@@ -78,3 +78,32 @@ export const createGarageIcon = (type: "COVERED" | "UNCOVERED") => {
     return null;
   }
 };
+
+export const createUserLocationIcon = () => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const L = require("leaflet");
+
+    // Create a simple green dot icon for user location
+    const svgIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+        <circle cx="12" cy="12" r="10" fill="#10B981" stroke="white" stroke-width="3"/>
+        <circle cx="12" cy="12" r="6" fill="#059669"/>
+      </svg>
+    `;
+
+    const dataUrl = `data:image/svg+xml;base64,${btoa(svgIcon)}`;
+
+    return new L.Icon({
+      iconUrl: dataUrl,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -10],
+      className: "user-location-marker"
+    });
+  } catch (error) {
+    console.error("Error creating user location icon:", error);
+    return null;
+  }
+};

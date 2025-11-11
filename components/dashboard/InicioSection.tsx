@@ -10,6 +10,7 @@ import {
   sortByDistance,
   Coordinates
 } from "@/lib/geo";
+import { useGeolocation } from "@/lib/hooks/useGeolocation";
 import {
   SearchHeader,
   FiltersPanel,
@@ -109,6 +110,43 @@ export default function InicioSection() {
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [activeReservation, setActiveReservation] = useState<Reservation | null>(null);
   const [isReservationModalMinimized, setIsReservationModalMinimized] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
+  const [isManualLocationRequest, setIsManualLocationRequest] = useState(false);
+
+  // Geolocation hook with high precision settings
+  const {
+    position: geolocationPosition,
+    error: geolocationError,
+    isLoading: isGettingLocation,
+    requestLocation,
+    clearError
+  } = useGeolocation({
+    enableHighAccuracy: true,
+    timeout: 25000,
+    maximumAge: 10000,
+    watchTimeout: 20000,
+    fallbackDelay: 15000,
+  });
+
+  // Update userLocation when geolocation position changes
+  useEffect(() => {
+    if (geolocationPosition) {
+      setUserLocation({
+        lat: geolocationPosition.lat,
+        lng: geolocationPosition.lng,
+        accuracy: geolocationPosition.accuracy,
+      });
+    }
+  }, [geolocationPosition]);
+
+  // Automatically request user location on component mount
+  useEffect(() => {
+    // Only request location if map is loaded and we don't already have a user location
+    if (mapLoaded && !userLocation && !isGettingLocation) {
+      console.log('Requesting user location automatically on map load...');
+      requestLocation();
+    }
+  }, [mapLoaded, userLocation, isGettingLocation, requestLocation]);
 
   // Load garages from API
   useEffect(() => {
@@ -405,46 +443,40 @@ export default function InicioSection() {
     setZoom(prev => Math.max(prev - 1, 1));
   };
 
-  const handleLocationClick = () => {
-    // Check if we're on the client side and geolocation is available
-    if (typeof window === "undefined" || !navigator.geolocation) {
-      alert("La geolocalización no está soportada por este navegador.");
+  const handleLocationClick = useCallback(() => {
+    // Check if map is loaded first
+    if (!mapLoaded) {
+      alert("El mapa aún no está cargado. Por favor, espere un momento.");
       return;
     }
 
-    // Get user's current location
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const newCenter = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        setMapCenter(newCenter);
-        setZoom(15);
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-        let errorMessage = "No se pudo obtener tu ubicación.";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage += " Por favor, permite el acceso a la ubicación.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += " La ubicación no está disponible.";
-            break;
-          case error.TIMEOUT:
-            errorMessage += " Se agotó el tiempo de espera.";
-            break;
-        }
-        alert(errorMessage);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes
-      }
-    );
-  };
+    // Clear any previous errors
+    clearError();
+
+    // Mark this as a manual request to show error alerts
+    setIsManualLocationRequest(true);
+
+    // Request location using the geolocation hook
+    requestLocation();
+  }, [mapLoaded, requestLocation, clearError]);
+
+  // Handle geolocation errors
+  // Don't show alerts for automatic location requests (only for manual clicks)
+  useEffect(() => {
+    if (geolocationError && isManualLocationRequest) {
+      alert(geolocationError.userFriendlyMessage);
+      setIsManualLocationRequest(false);
+    }
+  }, [geolocationError, isManualLocationRequest]);
+
+  // Set initial map center to user location when obtained automatically
+  useEffect(() => {
+    if (userLocation && !selectedLocation) {
+      // Only update if no location was manually selected
+      setMapCenter({ lat: userLocation.lat, lng: userLocation.lng });
+      setZoom(14); // Good zoom level for initial user location view
+    }
+  }, [userLocation, selectedLocation]);
 
   const handleGarageClick = (garageId: string) => {
     router.push(`/garage/${garageId}`);
@@ -475,6 +507,7 @@ export default function InicioSection() {
           zoom={zoom}
           parkingSpots={filteredParkingSpots}
           garages={filteredGarages}
+          userLocation={userLocation}
           onMapReady={() => setMapLoaded(true)}
           onGarageClick={handleGarageClick}
         />
@@ -491,6 +524,7 @@ export default function InicioSection() {
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onLocationClick={handleLocationClick}
+          isGettingLocation={isGettingLocation}
         />
 
       </div>

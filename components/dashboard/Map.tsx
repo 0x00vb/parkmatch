@@ -3,7 +3,7 @@
 import { useEffect, useState, memo, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { LatLngExpression } from "leaflet";
-import { configureLeaflet, createParkingIcon, createGarageIcon } from "@/lib/leaflet-config";
+import { configureLeaflet, createParkingIcon, createGarageIcon, createUserLocationIcon } from "@/lib/leaflet-config";
 
 // Dynamically import map components
 const MapContainer = dynamic(
@@ -68,11 +68,12 @@ interface MapProps {
   zoom: number;
   parkingSpots: ParkingSpot[];
   garages: Garage[];
+  userLocation?: { lat: number; lng: number } | null;
   onMapReady?: () => void;
   onGarageClick?: (garageId: string) => void;
 }
 
-function MapComponent({ center, zoom, parkingSpots, garages, onMapReady, onGarageClick }: MapProps) {
+function MapComponent({ center, zoom, parkingSpots, garages, userLocation, onMapReady, onGarageClick }: MapProps) {
   const [isClient, setIsClient] = useState(false);
 
   // Memoizar markers para evitar re-renders innecesarios
@@ -179,6 +180,40 @@ function MapComponent({ center, zoom, parkingSpots, garages, onMapReady, onGarag
     [garages, onGarageClick]
   );
 
+  // User location marker
+  const userLocationMarker = useMemo(() => {
+    if (!userLocation) return null;
+
+    const userIcon = createUserLocationIcon();
+    if (!userIcon) return null;
+
+    const accuracyText = userLocation.accuracy
+      ? `Precisión: ±${Math.round(userLocation.accuracy)}m`
+      : '';
+
+    return (
+      <Marker
+        key="user-location"
+        position={[userLocation.lat, userLocation.lng] as LatLngExpression}
+        icon={userIcon}
+      >
+        <Popup>
+          <div className="text-sm text-center max-w-48">
+            <strong className="text-green-600 block mb-1">Tu ubicación actual</strong>
+            <span className="text-gray-600 text-xs">
+              {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+            </span>
+            {accuracyText && (
+              <div className="mt-1 text-xs text-gray-500">
+                {accuracyText}
+              </div>
+            )}
+          </div>
+        </Popup>
+      </Marker>
+    );
+  }, [userLocation]);
+
   useEffect(() => {
     // Configure leaflet on client side
     configureLeaflet();
@@ -207,18 +242,24 @@ function MapComponent({ center, zoom, parkingSpots, garages, onMapReady, onGarag
         scrollWheelZoom={true}
         dragging={true}
         touchZoom={true}
+        whenReady={() => {
+          onMapReady?.();
+        }}
       >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapController zoom={zoom} center={center} onMapReady={onMapReady} />
+      <MapController zoom={zoom} center={center} />
 
       {/* Parking Spot Markers */}
       {parkingSpotMarkers}
 
       {/* Garage Markers */}
       {garageMarkers}
+
+      {/* User Location Marker */}
+      {userLocationMarker}
       </MapContainer>
     </div>
   );
