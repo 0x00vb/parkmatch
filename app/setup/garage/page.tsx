@@ -34,6 +34,8 @@ import axios from "axios";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { useSession } from "next-auth/react";
+import DebouncedInput from "@/components/ui/DebouncedInput";
+import SearchSuggestions from "@/components/dashboard/inicio/SearchSuggestions";
 import "leaflet/dist/leaflet.css";
 
 interface LocationData {
@@ -41,6 +43,26 @@ interface LocationData {
   city: string;
   latitude: number;
   longitude: number;
+}
+
+interface GeocodingResult {
+  lat: number;
+  lng: number;
+  displayName: string;
+  address: {
+    houseNumber?: string;
+    road?: string;
+    suburb?: string;
+    city?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
+}
+
+interface SearchSuggestion {
+  result: GeocodingResult;
+  distance?: number;
 }
 
 export default function GarageLocationPage() {
@@ -56,13 +78,15 @@ export default function GarageLocationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [nextStep, setNextStep] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showResults, setShowResults] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isFromDashboard, setIsFromDashboard] = useState(false);
 
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
-  const addressInputRef = useRef<HTMLInputElement>(null);
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -94,6 +118,17 @@ export default function GarageLocationPage() {
     setMapLoaded(true);
   }, []);
 
+  // Handle debounced search
+  useEffect(() => {
+    if (debouncedSearchQuery.trim()) {
+      searchAddress(debouncedSearchQuery);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      setIsSearching(false);
+    }
+  }, [debouncedSearchQuery]);
+
   // Early returns must happen after all hooks are called
   if (status === "loading") {
     return (
@@ -113,10 +148,13 @@ export default function GarageLocationPage() {
   // Función para buscar direcciones usando Nominatim
   const searchAddress = async (query: string) => {
     if (!query.trim()) {
-      setSearchResults([]);
-      setShowResults(false);
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      setIsSearching(false);
       return;
     }
+
+    setIsSearching(true);
 
     try {
       const response = await axios.get('https://nominatim.openstreetmap.org/search', {
@@ -132,11 +170,31 @@ export default function GarageLocationPage() {
         }
       });
 
-      setSearchResults(response.data);
-      setShowResults(true);
+      // Convert Nominatim results to SearchSuggestion format
+      const suggestions: SearchSuggestion[] = response.data.map((item: any) => ({
+        result: {
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon),
+          displayName: item.display_name,
+          address: {
+            houseNumber: item.address?.house_number,
+            road: item.address?.road,
+            suburb: item.address?.suburb,
+            city: item.address?.city || item.address?.town || item.address?.village,
+            state: item.address?.state,
+            postcode: item.address?.postcode,
+            country: item.address?.country,
+          }
+        }
+      }));
+
+      setSearchSuggestions(suggestions);
+      setShowSuggestions(true);
     } catch (error) {
       console.error('Error searching address:', error);
-      setSearchResults([]);
+      setSearchSuggestions([]);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -163,26 +221,23 @@ export default function GarageLocationPage() {
   };
 
   // Función para manejar selección de dirección
-  const handleAddressSelect = (result: any) => {
-    const lat = parseFloat(result.lat);
-    const lng = parseFloat(result.lon);
+  const handleAddressSelect = (suggestion: SearchSuggestion) => {
+    const { result } = suggestion;
+    const lat = result.lat;
+    const lng = result.lng;
 
     // Extraer ciudad de la respuesta
     let city = "Ciudad Autónoma de Buenos Aires";
     if (result.address) {
       if (result.address.city) {
         city = result.address.city;
-      } else if (result.address.town) {
-        city = result.address.town;
-      } else if (result.address.village) {
-        city = result.address.village;
       } else if (result.address.state) {
         city = result.address.state;
       }
     }
 
     setLocationData({
-      address: result.display_name,
+      address: result.displayName,
       city,
       latitude: lat,
       longitude: lng,
@@ -198,10 +253,8 @@ export default function GarageLocationPage() {
       mapRef.current.setView([lat, lng], 15);
     }
 
-    setShowResults(false);
-    if (addressInputRef.current) {
-      addressInputRef.current.value = result.display_name;
-    }
+    setShowSuggestions(false);
+    setSearchQuery(result.displayName);
   };
 
   // Función para manejar movimiento del marcador
@@ -216,8 +269,8 @@ export default function GarageLocationPage() {
 
     // Geocoding inverso para obtener dirección
     const result = await reverseGeocode(lat, lng);
-    if (result && addressInputRef.current) {
-      addressInputRef.current.value = result.display_name;
+    if (result) {
+      setSearchQuery(result.display_name);
       setLocationData(prev => ({
         ...prev,
         address: result.display_name,
@@ -248,8 +301,8 @@ export default function GarageLocationPage() {
 
               // Geocoding inverso
               reverseGeocode(lat, lng).then(result => {
-                if (result && addressInputRef.current) {
-                  addressInputRef.current.value = result.display_name;
+                if (result) {
+                  setSearchQuery(result.display_name);
                   setLocationData(prev => ({
                     ...prev,
                     address: result.display_name,
@@ -347,40 +400,32 @@ export default function GarageLocationPage() {
               Dirección
             </label>
             <div className="relative">
-              <input
-                ref={addressInputRef}
-                type="text"
-                id="address"
+              <DebouncedInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onDebouncedChange={setDebouncedSearchQuery}
                 placeholder="Ej: Av. Corrientes 1234"
-                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                onChange={(e) => searchAddress(e.target.value)}
-                onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                onFocus={() => {
-                  if (searchResults.length > 0) setShowResults(true);
+                className="rounded-xl"
+                icon={<MapPinIcon className="w-5 h-5 text-gray-400" />}
+                showClearButton={true}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setShowSuggestions(false);
+                  }
                 }}
               />
-              <MapPinIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            </div>
 
-            {/* Search Results Dropdown */}
-            {showResults && searchResults.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                {searchResults.map((result, index) => (
-                  <button
-                    key={index}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
-                    onClick={() => handleAddressSelect(result)}
-                  >
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {result.display_name.split(',')[0]}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {result.display_name}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+              {/* Search Suggestions */}
+              {showSuggestions && (
+                <SearchSuggestions
+                  suggestions={searchSuggestions}
+                  isSearching={isSearching}
+                  searchQuery={debouncedSearchQuery}
+                  onSelectSuggestion={handleAddressSelect}
+                  onClose={() => setShowSuggestions(false)}
+                />
+              )}
+            </div>
           </div>
 
           {/* City Input */}
