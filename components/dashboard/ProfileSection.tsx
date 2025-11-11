@@ -27,22 +27,22 @@ export default function ProfileSection() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-full min-h-dvh bg-gray-50 overflow-y-auto pb-24">
       {/* Header */}
       <div className="bg-white p-4 shadow-sm border-b border-gray-200">
         <h1 className="text-lg font-semibold text-gray-900 text-center">Mi Perfil</h1>
       </div>
 
       {/* Profile Section */}
-      <div className="bg-white mx-4 mt-4 rounded-xl p-6 shadow-sm">
+      <div className="bg-white mx-4 mt-4 rounded-xl p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col items-center text-center">
           {/* Avatar */}
-          <div className="w-20 h-20 bg-orange-200 rounded-full flex items-center justify-center mb-4">
-            <UserIcon className="w-10 h-10 text-orange-600" />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-orange-200 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+            <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 text-orange-600" />
           </div>
 
           {/* Name */}
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{userName}</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">{userName}</h2>
 
           {/* Rating */}
           <div className="flex items-center text-green-600">
@@ -61,7 +61,7 @@ export default function ProfileSection() {
           {/* Información Personal */}
           <button
             onClick={() => router.push("/profile/edit")}
-            className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+            className="w-full flex items-center p-4 sm:p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1"
           >
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
               <UserIcon className="w-5 h-5 text-green-600" />
@@ -72,7 +72,7 @@ export default function ProfileSection() {
           {/* Métodos de Pago */}
           <button
             onClick={() => router.push("/profile/payment-methods")}
-            className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+            className="w-full flex items-center p-4 sm:p-4 hover:bg-gray-50 rounded-lg transition-colors mb-1"
           >
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
               <CreditCardIcon className="w-5 h-5 text-green-600" />
@@ -88,7 +88,7 @@ export default function ProfileSection() {
         <div className="p-4">
           <h3 className="text-base font-semibold text-gray-900 mb-3">Soporte</h3>
 
-          <button className="w-full flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors">
+          <button className="w-full flex items-center p-4 sm:p-4 hover:bg-gray-50 rounded-lg transition-colors">
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
               <QuestionMarkCircleIcon className="w-5 h-5 text-green-600" />
             </div>
@@ -98,10 +98,10 @@ export default function ProfileSection() {
       </div>
 
       {/* Logout Button */}
-      <div className="mx-4 mt-6 mb-8">
+      <div className="mx-4 mt-6 mb-6 sm:mb-8">
         <button
           onClick={handleLogout}
-          className="w-full bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-center hover:bg-red-100 transition-colors"
+          className="w-full bg-red-50 border border-red-200 rounded-xl p-4 sm:p-4 flex items-center justify-center hover:bg-red-100 transition-colors"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 text-red-600 mr-3" />
           <span className="text-base font-medium text-red-600">Cerrar Sesión</span>
