@@ -118,7 +118,6 @@ export async function GET(request: NextRequest) {
               name: true,
               firstName: true,
               lastName: true,
-              lastName: true,
             }
           },
           availabilitySchedules: {

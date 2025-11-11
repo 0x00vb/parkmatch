@@ -28,6 +28,15 @@ type PaymentMethod = {
 
 const cardFormSchema = z.object({
   holderName: z.string().min(2, "Nombre inválido"),
+  cardNumber: z.string().min(1, "Número requerido"),
+  expMonth: z.string().min(1, "Mes requerido"),
+  expYear: z.string().min(1, "Año requerido"),
+  cvc: z.string().min(3, "CVC requerido"),
+  makeDefault: z.boolean().optional(),
+});
+
+const cardValidationSchema = z.object({
+  holderName: z.string().min(2, "Nombre inválido"),
   cardNumber: z
     .string()
     .transform((v) => v.replace(/\s+/g, ""))
@@ -93,7 +102,7 @@ export default function PaymentMethodsPage() {
       expYear: "",
       cvc: "",
       makeDefault: true,
-    } as unknown as CardForm,
+    },
   });
 
   useEffect(() => {
@@ -133,16 +142,18 @@ export default function PaymentMethodsPage() {
 
   async function onSubmit(form: CardForm) {
     try {
-      const num = (form.cardNumber as unknown as string).replace(/\s+/g, "");
+      // Validate and transform the data
+      const validatedData = cardValidationSchema.parse(form);
+      const num = validatedData.cardNumber.replace(/\s+/g, "");
       const meta = detectBrand(num);
       const payload = {
         brand: meta.brand,
         last4: num.slice(-4),
-        expMonth: Number(form.expMonth as unknown as string),
-        expYear: Number(form.expYear as unknown as string),
-        holderName: form.holderName,
+        expMonth: validatedData.expMonth,
+        expYear: validatedData.expYear,
+        holderName: validatedData.holderName,
         network: meta.network,
-        default: !!form.makeDefault,
+        default: !!validatedData.makeDefault,
       };
       const res = await fetch("/api/payment-methods", {
         method: "POST",

@@ -238,13 +238,10 @@ function logConcurrencyConflict(
     requestedEndTime: endTime.toISOString(),
     conflictType: "concurrent_reservation",
     timestamp: new Date().toISOString(),
+    conflictingReservationId: conflictingReservation?.id,
+    conflictingStartTime: conflictingReservation?.startTime,
+    conflictingEndTime: conflictingReservation?.endTime,
   };
-
-  if (conflictingReservation) {
-    conflictData.conflictingReservationId = conflictingReservation.id;
-    conflictData.conflictingStartTime = conflictingReservation.startTime;
-    conflictData.conflictingEndTime = conflictingReservation.endTime;
-  }
 
   logInfo("Reservation concurrency conflict detected", conflictData);
 }
