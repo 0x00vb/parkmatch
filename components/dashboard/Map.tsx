@@ -68,7 +68,7 @@ interface MapProps {
   zoom: number;
   parkingSpots: ParkingSpot[];
   garages: Garage[];
-  userLocation?: { lat: number; lng: number } | null;
+  userLocation?: { lat: number; lng: number; accuracy?: number } | null;
   onMapReady?: () => void;
   onGarageClick?: (garageId: string) => void;
 }

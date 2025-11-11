@@ -75,7 +75,7 @@ export const useGeolocation = (options: GeolocationOptions = {}): UseGeolocation
     setIsLoading(false);
   }, []);
 
-  const handlePositionSuccess = useCallback((pos: GeolocationPosition) => {
+  const handlePositionSuccess = useCallback((pos: globalThis.GeolocationPosition) => {
     const newPosition: GeolocationPosition = {
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
