@@ -1,6 +1,6 @@
-# ParkMatch - Aplicación de Alquiler de Cocheras
+# Match - Aplicación de Alquiler de Cocheras
 
-ParkMatch es una aplicación web moderna para conectar conductores con propietarios de cocheras en Buenos Aires. Permite a los usuarios encontrar, reservar y gestionar espacios de estacionamiento de forma segura y eficiente.
+Match es una aplicación web moderna para conectar conductores con propietarios de cocheras en Buenos Aires. Permite a los usuarios encontrar, reservar y gestionar espacios de estacionamiento de forma segura y eficiente.
 
 ## 🚀 Características Implementadas
 
@@ -8,7 +8,7 @@ ParkMatch es una aplicación web moderna para conectar conductores con propietar
 
 #### 1. Pantalla de Inicio (Landing Page)
 - Diseño mobile-first responsive
-- Logo y branding de ParkMatch
+- Logo y branding de Match
 - Presentación de servicios para conductores y propietarios
 - Call-to-action para registro
 - Navegación a login/registro
@@ -69,7 +69,7 @@ ParkMatch es una aplicación web moderna para conectar conductores con propietar
 ### 1. Clonar el repositorio
 ```bash
 git clone <repository-url>
-cd parkmatch
+cd Match
 ```
 
 ### 2. Instalar dependencias
@@ -80,14 +80,14 @@ npm install
 ### 3. Configurar Base de Datos
 Crear base de datos PostgreSQL:
 ```sql
-CREATE DATABASE parkmatch;
+CREATE DATABASE Match;
 ```
 
 ### 4. Configurar Variables de Entorno
 Crear archivo `.env` en la raíz del proyecto:
 ```env
 # Database
-DATABASE_URL="postgresql://postgres:Valentino@localhost:5432/parkmatch"
+DATABASE_URL="postgresql://postgres:Valentino@localhost:5432/Match"
 
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key-here"
@@ -133,7 +133,7 @@ La aplicación estará disponible en [http://localhost:3000](http://localhost:30
 ## 📱 Estructura del Proyecto
 
 ```
-parkmatch/
+Match/
 ├── app/
 │   ├── api/
 │   │   ├── auth/
@@ -270,7 +270,7 @@ npx prisma db push         # Sincronizar esquema sin migración
 ### Error de conexión a PostgreSQL
 - Verificar que PostgreSQL esté ejecutándose
 - Confirmar credenciales en DATABASE_URL
-- Verificar que la base de datos 'parkmatch' exista
+- Verificar que la base de datos 'Match' exista
 
 ### Error de Google OAuth
 - Verificar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET

@@ -19,8 +19,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ParkMatch - La forma inteligente de estacionar",
+  title: "Match - La forma inteligente de estacionar",
   description: "Encuentra y reserva cocheras en Buenos Aires de forma rápida y segura",
+  icons: {
+    icon: "/MatchLogo.webp",
+  },
 };
 
 export default function RootLayout({

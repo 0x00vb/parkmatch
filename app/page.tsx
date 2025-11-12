@@ -1,19 +1,56 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { TruckIcon, HomeIcon, MapPinIcon, CurrencyDollarIcon, ClockIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 export default function Home() {
+  const [displayText, setDisplayText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const fullText = "Match";
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDisplayText((prev) => {
+        if (!isDeleting) {
+          // Typing forward
+          const nextText = fullText.slice(0, prev.length + 1);
+          if (nextText === fullText) {
+            // Finished typing, start deleting after a pause
+            setTimeout(() => setIsDeleting(true), 1000);
+          }
+          return nextText;
+        } else {
+          // Deleting backward
+          const nextText = prev.slice(0, -1);
+          if (nextText === "") {
+            // Finished deleting, start typing again after a pause
+            setTimeout(() => setIsDeleting(false), 500);
+          }
+          return nextText;
+        }
+      });
+    }, isDeleting ? 100 : 200); // Faster when deleting
+
+    return () => clearTimeout(timer);
+  }, [displayText, isDeleting]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Hero Section */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="pt-12 pb-20 md:pt-20 md:pb-28 text-center">
           {/* Logo and Header */}
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-2xl">P</span>
-            </div>
+          <div className="flex items-center justify-center mb-8">
+            <img
+              src="/MatchLogo.webp"
+              alt="Match Logo"
+              className="w-16 h-16 rounded-2xl shadow-lg mr-4"
+            />
+            <span className="text-3xl md:text-4xl font-bold text-gray-900">
+              {displayText}
+              <span className="animate-pulse text-green-600">|</span>
+            </span>
           </div>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6 max-w-4xl mx-auto">
@@ -75,7 +112,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              ¿Por qué elegir <span className="text-green-600">ParkMatch</span>?
+              ¿Por qué elegir <span className="text-green-600">Match</span>?
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Nuestra plataforma ofrece una solución completa para todos tus necesidades de estacionamiento
@@ -139,7 +176,7 @@ export default function Home() {
                 Solución dual para <span className="text-green-600">Conductores</span> y <span className="text-green-600">Propietarios</span>
               </h2>
               <p className="text-lg text-gray-600 mb-8">
-                ParkMatch conecta a conductores con cocheras disponibles y permite a los propietarios monetizar sus espacios de estacionamiento.
+                Match conecta a conductores con cocheras disponibles y permite a los propietarios monetizar sus espacios de estacionamiento.
               </p>
               
               <div className="space-y-6">
@@ -224,7 +261,7 @@ export default function Home() {
             ¿Listo para cambiar la forma en que estacionas?
           </h2>
           <p className="text-xl text-green-100 mb-10 max-w-2xl mx-auto">
-            Únete a miles de usuarios que ya están disfrutando de la comodidad de ParkMatch.
+            Únete a miles de usuarios que ya están disfrutando de la comodidad de Match.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -248,10 +285,16 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-6 md:mb-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-lg">P</span>
+              <img
+                src="/MatchLogo.webp"
+                alt="Match"
+                className="h-12 w-auto"
+              />
+              <div>
+                <span className="text-white text-2xl font-bold ml-2">
+                  Match
+                </span>
               </div>
-              <span className="text-white font-semibold text-xl">ParkMatch</span>
             </div>
             <div className="flex space-x-8">
               <Link href="/auth/signin" className="text-gray-300 hover:text-white transition-colors">
@@ -266,7 +309,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2025 ParkMatch. Todos los derechos reservados.</p>
+            <p>&copy; 2025 Match. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>

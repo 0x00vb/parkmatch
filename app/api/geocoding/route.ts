@@ -66,7 +66,7 @@ async function fetchGeocodingResults(query: string, limit: number, countryCodes:
       try {
         const response = await fetch(url, {
           headers: {
-            'User-Agent': 'ParkMatch/1.0 (https://parkmatch.com)',
+            'User-Agent': 'Match/1.0 (https://Match.com)',
             'Accept': 'application/json',
           },
         });

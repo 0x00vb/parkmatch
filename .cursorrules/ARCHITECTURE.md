@@ -1,8 +1,8 @@
-# 🏗️ Arquitectura de ParkMatch
+# 🏗️ Arquitectura de Match
 
 ## 📋 Visión General
 
-ParkMatch es una plataforma de alquiler y reserva de cocheras construida con Next.js 16, PostgreSQL y Prisma. La arquitectura sigue principios de separación de responsabilidades, con sistemas modulares para autenticación, validación, cache, logging y notificaciones.
+Match es una plataforma de alquiler y reserva de cocheras construida con Next.js 16, PostgreSQL y Prisma. La arquitectura sigue principios de separación de responsabilidades, con sistemas modulares para autenticación, validación, cache, logging y notificaciones.
 
 ## 🏛️ Arquitectura General
 

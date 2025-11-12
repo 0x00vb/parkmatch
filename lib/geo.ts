@@ -1,5 +1,5 @@
 /**
- * Utilidades geoespaciales para ParkMatch
+ * Utilidades geoespaciales para Match
  * Incluye cálculos de distancia, bounding boxes y validaciones de coordenadas
  */
 

@@ -166,7 +166,7 @@ export default function GarageLocationPage() {
           addressdetails: 1,
         },
         headers: {
-          'User-Agent': 'ParkMatch/1.0'
+          'User-Agent': 'Match/1.0'
         }
       });
 
@@ -209,7 +209,7 @@ export default function GarageLocationPage() {
           addressdetails: 1,
         },
         headers: {
-          'User-Agent': 'ParkMatch/1.0'
+          'User-Agent': 'Match/1.0'
         }
       });
 

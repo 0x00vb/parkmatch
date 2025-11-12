@@ -102,7 +102,7 @@ export default function DashboardPage() {
         return (
           <div className="flex-1 flex items-center justify-center bg-gray-50">
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">¡Bienvenido a ParkMatch!</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">¡Bienvenido a Match!</h2>
               <p className="text-gray-600">Selecciona una sección para comenzar</p>
             </div>
           </div>
@@ -117,10 +117,12 @@ export default function DashboardPage() {
         <div className="hidden md:flex md:flex-col md:w-64 lg:w-72 xl:w-80 bg-white border-r border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">P</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900">ParkMatch</span>
+              <img
+                src="/MatchLogo.webp"
+                alt="Match Logo"
+                className="w-8 h-8 rounded-lg"
+              />
+              <span className="text-xl font-semibold text-gray-900">Match</span>
             </div>
           </div>
           <BottomNavigation 
