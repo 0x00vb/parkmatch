@@ -28,11 +28,57 @@ type PaymentMethod = {
 
 const cardFormSchema = z.object({
   holderName: z.string().min(2, "Nombre inválido"),
-  cardNumber: z.string().min(1, "Número requerido"),
-  expMonth: z.string().min(1, "Mes requerido"),
-  expYear: z.string().min(1, "Año requerido"),
-  cvc: z.string().min(3, "CVC requerido"),
+  cardNumber: z
+    .string()
+    .min(1, "Número requerido")
+    .transform((v) => v.replace(/\s+/g, ""))
+    .refine((v) => /^\d{1,16}$/.test(v), { message: "Máximo 16 dígitos" }),
+  expMonth: z
+    .string()
+    .min(1, "Mes requerido")
+    .refine((v) => {
+      const month = Number(v);
+      return Number.isInteger(month) && month >= 1 && month <= 12;
+    }, {
+      message: "Mes debe ser entre 1 y 12",
+    }),
+  expYear: z
+    .string()
+    .min(1, "Año requerido")
+    .refine((v) => {
+      const year = Number(v);
+      return Number.isInteger(year) && year >= new Date().getFullYear();
+    }, {
+      message: "Año no puede ser anterior al actual",
+    }),
+  cvc: z
+    .string()
+    .min(1, "CVC requerido")
+    .refine((v) => /^\d{3}$/.test(v), { message: "CVC debe tener exactamente 3 dígitos" }),
   makeDefault: z.boolean().optional(),
+}).refine((data) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+
+  const expYear = Number(data.expYear);
+  const expMonth = Number(data.expMonth);
+
+  // Si el año es mayor al actual, es válido
+  if (expYear > currentYear) {
+    return true;
+  }
+
+  // Si el año es igual al actual, el mes debe ser mayor o igual
+  if (expYear === currentYear) {
+    return expMonth >= currentMonth;
+  }
+
+  // Si el año es menor al actual, es inválido
+  return false;
+}, {
+  message: "La fecha de vencimiento no puede ser anterior a la fecha actual",
+  path: ["expMonth"], // El error se mostrará en el campo de mes
 });
 
 const cardValidationSchema = z.object({
@@ -40,7 +86,7 @@ const cardValidationSchema = z.object({
   cardNumber: z
     .string()
     .transform((v) => v.replace(/\s+/g, ""))
-    .refine((v) => /^\d{13,19}$/.test(v), { message: "Número inválido" }),
+    .refine((v) => /^\d{13,16}$/.test(v), { message: "Número inválido (13-16 dígitos)" }),
   expMonth: z
     .string()
     .transform((v) => Number(v))
@@ -56,8 +102,27 @@ const cardValidationSchema = z.object({
   cvc: z
     .string()
     .transform((v) => v.trim())
-    .refine((v) => /^\d{3,4}$/.test(v), { message: "CVC inválido" }),
+    .refine((v) => /^\d{3}$/.test(v), { message: "CVC debe tener exactamente 3 dígitos" }),
   makeDefault: z.boolean().optional(),
+}).refine((data) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+
+  // Si el año es mayor al actual, es válido
+  if (data.expYear > currentYear) {
+    return true;
+  }
+
+  // Si el año es igual al actual, el mes debe ser mayor o igual
+  if (data.expYear === currentYear) {
+    return data.expMonth >= currentMonth;
+  }
+
+  // Si el año es menor al actual, es inválido
+  return false;
+}, {
+  message: "La fecha de vencimiento no puede ser anterior a la fecha actual",
 });
 
 type CardForm = z.infer<typeof cardFormSchema>;
@@ -73,7 +138,7 @@ function detectBrand(cardNumber: string): { brand: string; network: string } {
 }
 
 function formatCardNumber(v: string): string {
-  const digits = v.replace(/\D/g, "");
+  const digits = v.replace(/\D/g, "").slice(0, 16); // Limitar a máximo 16 dígitos
   return digits.replace(/(.{4})/g, "$1 ").trim();
 }
 
@@ -323,6 +388,7 @@ export default function PaymentMethodsPage() {
                   type="text"
                   inputMode="numeric"
                   autoComplete="cc-number"
+                  maxLength={19}
                   {...register("cardNumber")}
                   onChange={(e) => {
                     const formatted = formatCardNumber(e.target.value);
@@ -375,7 +441,7 @@ export default function PaymentMethodsPage() {
                   <input
                     type="password"
                     inputMode="numeric"
-                    maxLength={4}
+                    maxLength={3}
                     {...register("cvc")}
                     className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-600"
                     placeholder="CVC"
