@@ -19,6 +19,7 @@ export interface GeolocationOptions {
   maximumAge?: number;
   watchTimeout?: number; // Tiempo máximo para esperar por watchPosition
   fallbackDelay?: number; // Delay antes de intentar fallback con getCurrentPosition
+  continuous?: boolean; // Si debe usar watchPosition para actualizaciones continuas
 }
 
 export interface UseGeolocationReturn {
@@ -37,6 +38,7 @@ const DEFAULT_OPTIONS: Required<GeolocationOptions> = {
   maximumAge: 10000,
   watchTimeout: 20000,
   fallbackDelay: 15000,
+  continuous: false,
 };
 
 export const useGeolocation = (options: GeolocationOptions = {}): UseGeolocationReturn => {
@@ -75,7 +77,7 @@ export const useGeolocation = (options: GeolocationOptions = {}): UseGeolocation
     setIsLoading(false);
   }, []);
 
-  const handlePositionSuccess = useCallback((pos: globalThis.GeolocationPosition) => {
+  const handlePositionSuccess = useCallback((pos: globalThis.GeolocationPosition, opts: Required<GeolocationOptions>) => {
     const newPosition: GeolocationPosition = {
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
@@ -83,16 +85,27 @@ export const useGeolocation = (options: GeolocationOptions = {}): UseGeolocation
       timestamp: pos.timestamp,
     };
 
-    console.log('Ubicación obtenida:', {
-      lat: newPosition.lat,
-      lng: newPosition.lng,
-      accuracy: newPosition.accuracy,
-      timestamp: new Date(newPosition.timestamp).toLocaleTimeString()
-    });
+    // Solo log en desarrollo y cuando es la primera ubicación o cambió significativamente
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Ubicación obtenida:', {
+        lat: newPosition.lat,
+        lng: newPosition.lng,
+        accuracy: newPosition.accuracy,
+        timestamp: new Date(newPosition.timestamp).toLocaleTimeString(),
+        continuous: opts.continuous
+      });
+    }
 
     setPosition(newPosition);
     setError(null);
     setIsLoading(false);
+
+    // Si no necesitamos actualizaciones continuas, detener el watcher después de obtener una buena posición
+    if (!opts.continuous && watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+      setIsWatching(false);
+    }
   }, []);
 
   const handlePositionError = useCallback((err: GeolocationPositionError) => {
@@ -136,48 +149,64 @@ export const useGeolocation = (options: GeolocationOptions = {}): UseGeolocation
     setError(null);
     setIsLoading(true);
 
-    console.log('Iniciando obtención de ubicación con configuración:', opts);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Iniciando obtención de ubicación con configuración:', opts);
+    }
 
-    // Usar watchPosition para obtener actualizaciones continuas
-    const watchId = navigator.geolocation.watchPosition(
-      handlePositionSuccess,
-      handlePositionError,
-      {
-        enableHighAccuracy: opts.enableHighAccuracy,
-        timeout: opts.timeout,
-        maximumAge: opts.maximumAge,
-      }
-    );
+    if (opts.continuous) {
+      // Usar watchPosition para obtener actualizaciones continuas
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => handlePositionSuccess(pos, opts),
+        handlePositionError,
+        {
+          enableHighAccuracy: opts.enableHighAccuracy,
+          timeout: opts.timeout,
+          maximumAge: opts.maximumAge,
+        }
+      );
 
-    watchIdRef.current = watchId;
-    setIsWatching(true);
+      watchIdRef.current = watchId;
+      setIsWatching(true);
 
-    // Timeout para watchPosition - si no obtenemos una buena posición en watchTimeout ms,
-    // intentar con getCurrentPosition como fallback
-    watchTimeoutRef.current = setTimeout(() => {
-      if (isLoading && watchIdRef.current !== null) {
-        console.log('WatchPosition tardando demasiado, intentando fallback con getCurrentPosition...');
-
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            // Limpiar el watcher ya que obtuvimos una posición con getCurrentPosition
-            if (watchIdRef.current !== null) {
-              navigator.geolocation.clearWatch(watchIdRef.current);
-              watchIdRef.current = null;
-            }
-            handlePositionSuccess(pos);
-            setIsWatching(false);
-          },
-          handlePositionError,
-          {
-            enableHighAccuracy: true,
-            timeout: opts.fallbackDelay,
-            maximumAge: 0, // Forzar ubicación fresca
+      // Timeout para watchPosition - si no obtenemos una buena posición en watchTimeout ms,
+      // intentar con getCurrentPosition como fallback
+      watchTimeoutRef.current = setTimeout(() => {
+        if (isLoading && watchIdRef.current !== null) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('WatchPosition tardando demasiado, intentando fallback con getCurrentPosition...');
           }
-        );
-      }
-    }, opts.watchTimeout);
 
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              // Limpiar el watcher ya que obtuvimos una posición con getCurrentPosition
+              if (watchIdRef.current !== null) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+                watchIdRef.current = null;
+              }
+              handlePositionSuccess(pos, opts);
+              setIsWatching(false);
+            },
+            handlePositionError,
+            {
+              enableHighAccuracy: true,
+              timeout: opts.fallbackDelay,
+              maximumAge: 0, // Forzar ubicación fresca
+            }
+          );
+        }
+      }, opts.watchTimeout);
+    } else {
+      // Usar getCurrentPosition para obtener una sola ubicación
+      navigator.geolocation.getCurrentPosition(
+        (pos) => handlePositionSuccess(pos, opts),
+        handlePositionError,
+        {
+          enableHighAccuracy: opts.enableHighAccuracy,
+          timeout: opts.timeout,
+          maximumAge: opts.maximumAge,
+        }
+      );
+    }
   }, [opts, handlePositionSuccess, handlePositionError, stopWatching, isLoading]);
 
   // Cleanup on unmount
