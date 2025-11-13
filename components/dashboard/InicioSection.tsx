@@ -11,12 +11,14 @@ import {
   Coordinates
 } from "@/lib/geo";
 import { useGeolocation } from "@/lib/hooks/useGeolocation";
+import { useRealTimeParkingSearch } from "@/lib/hooks/useRealTimeParkingSearch";
 import {
   SearchHeader,
   FiltersPanel,
   MapControls,
   ResultsModal
 } from "./inicio";
+import RealTimeSearchButton from "./RealTimeSearchButton";
 import ActiveReservationModal from "@/components/reservations/ActiveReservationModal";
 import { Reservation } from "@/types/reservation";
 
@@ -113,6 +115,9 @@ export default function InicioSection() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [isManualLocationRequest, setIsManualLocationRequest] = useState(false);
 
+  // Real-time search state
+  const [realTimeResults, setRealTimeResults] = useState<Array<{ garage?: Garage; parkingSpot?: ParkingSpot; distance: number }>>([]);
+
   // Geolocation hook with high precision settings
   const {
     position: geolocationPosition,
@@ -127,6 +132,21 @@ export default function InicioSection() {
     watchTimeout: 20000,
     fallbackDelay: 15000,
   });
+
+  // Real-time parking search hook
+  const {
+    searchNearbyGarages,
+    isSearching: isRealTimeSearching,
+    error: realTimeSearchError
+  } = useRealTimeParkingSearch(garages);
+
+  // Show real-time search errors as notifications
+  useEffect(() => {
+    if (realTimeSearchError) {
+      console.error('Real-time search error:', realTimeSearchError);
+      // Could add toast notification here if needed
+    }
+  }, [realTimeSearchError]);
 
   // Update userLocation when geolocation position changes
   useEffect(() => {
@@ -152,15 +172,21 @@ export default function InicioSection() {
   useEffect(() => {
     const loadGarages = async () => {
       try {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🏢 Cargando garages desde API...');
+        }
         const response = await fetch('/api/garages?public=true');
         if (response.ok) {
           const data = await response.json();
-          setGarages(data.garages);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Garages cargados:', data.garages?.length || 0);
+          }
+          setGarages(data.garages || []);
         } else {
-          console.error('Error loading garages:', response.statusText);
+          console.error('❌ Error loading garages:', response.statusText);
         }
       } catch (error) {
-        console.error('Error fetching garages:', error);
+        console.error('❌ Error fetching garages:', error);
       }
     };
 
@@ -424,6 +450,8 @@ export default function InicioSection() {
 
   const handleCloseModal = useCallback(() => {
     setShowResultsModal(false);
+    // Clear real-time results when modal closes
+    setRealTimeResults([]);
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -492,6 +520,57 @@ export default function InicioSection() {
     router.push(`/garage/${garageId}`);
   };
 
+  // Handle real-time parking search
+  const handleRealTimeSearch = async () => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀 handleRealTimeSearch called');
+    }
+
+    // Verificar que tengamos ubicación del hook de geolocalización
+    if (!userLocation) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ No user location available from geolocation hook');
+      }
+      return;
+    }
+
+    try {
+      const userCoords = { lat: userLocation.lat, lng: userLocation.lng };
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📍 Using user location from geolocation hook:', userCoords);
+      }
+
+      const results = await searchNearbyGarages(userCoords);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📋 Search results:', results);
+      }
+
+      if (results.length > 0) {
+        // Convert results to modal format
+        const modalResults = results.map(result => ({
+          garage: result.garage,
+          distance: result.distance
+        }));
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📱 Opening modal with results:', modalResults.length);
+        }
+        setRealTimeResults(modalResults);
+        setShowResultsModal(true);
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📭 No results found, showing empty modal');
+        }
+        // Show notification for no results
+        setRealTimeResults([]);
+        setShowResultsModal(true);
+      }
+    } catch (error) {
+      console.error('❌ Error in real-time search:', error);
+      // Error is handled by the hook
+    }
+  };
+
   return (
     <div className="flex flex-col h-full flex-1 overflow-hidden">
       <SearchHeader
@@ -534,7 +613,11 @@ export default function InicioSection() {
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onLocationClick={handleLocationClick}
+          onRealTimeSearch={handleRealTimeSearch}
           isGettingLocation={isGettingLocation}
+          isRealTimeSearching={isRealTimeSearching}
+          userLocation={userLocation}
+          hasGarages={garages.length > 0}
         />
 
       </div>
@@ -546,7 +629,7 @@ export default function InicioSection() {
 
       <ResultsModal
         showModal={showResultsModal}
-        results={modalResults}
+        results={realTimeResults.length > 0 ? realTimeResults : modalResults}
         onClose={handleCloseModal}
         onGarageClick={handleGarageClick}
         onParkingSpotClick={(lat, lng) => {
@@ -555,6 +638,7 @@ export default function InicioSection() {
                             setShowResultsModal(false);
         }}
       />
+
 
       {/* Active Reservation Modal */}
       {showReservationModal && activeReservation && (
