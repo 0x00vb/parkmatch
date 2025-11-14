@@ -176,42 +176,44 @@ export default function ReservationForm({ garage, onBack, onSuccess }: Reservati
     const durationDays = durationHours / 24;
     const durationMonths = durationDays / 30; // Approximate month as 30 days
 
-    let price: number;
+    let basePrice: number;
     let pricingType: 'hourly' | 'daily' | 'monthly';
-    let breakdown: string;
+    let breakdownLines: string[] = [];
 
     // Determine pricing strategy based on duration and available prices
     if (durationHours < 24 && garage.hourlyPrice) {
       // Use hourly pricing for reservations less than 24 hours
-      price = garage.hourlyPrice * durationHours;
+      basePrice = garage.hourlyPrice * durationHours;
       pricingType = 'hourly';
-      breakdown = `${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora`;
+      breakdownLines.push(`${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora = $${basePrice.toFixed(2)}`);
     } else if (durationDays < 7 && garage.dailyPrice) {
       // Use daily pricing for reservations 1-7 days
       const days = Math.ceil(durationDays);
-      price = garage.dailyPrice * days;
+      basePrice = garage.dailyPrice * days;
       pricingType = 'daily';
-      breakdown = `${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día`;
+      breakdownLines.push(`${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día = $${basePrice.toFixed(2)}`);
     } else if (durationDays >= 7 && garage.monthlyPrice) {
       // Use monthly pricing for reservations 7+ days
       const months = Math.ceil(durationMonths);
-      price = garage.monthlyPrice * months;
+      basePrice = garage.monthlyPrice * months;
       pricingType = 'monthly';
-      breakdown = `${months} mes${months > 1 ? 'es' : ''} × $${garage.monthlyPrice}/mes`;
+      breakdownLines.push(`${months} mes${months > 1 ? 'es' : ''} × $${garage.monthlyPrice}/mes = $${basePrice.toFixed(2)}`);
     } else if (garage.dailyPrice) {
       // Fallback to daily pricing if monthly not available
       const days = Math.ceil(durationDays);
-      price = garage.dailyPrice * days;
+      basePrice = garage.dailyPrice * days;
       pricingType = 'daily';
-      breakdown = `${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día`;
+      breakdownLines.push(`${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día = $${basePrice.toFixed(2)}`);
     } else if (garage.hourlyPrice) {
       // Final fallback to hourly pricing
-      price = garage.hourlyPrice * durationHours;
+      basePrice = garage.hourlyPrice * durationHours;
       pricingType = 'hourly';
-      breakdown = `${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora`;
+      breakdownLines.push(`${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora = $${basePrice.toFixed(2)}`);
     } else {
       return { price: 0, pricingType: 'hourly' as const, breakdown: 'Precio no disponible' };
     }
+
+    let price = basePrice;
 
     // Apply peak hour pricing (7-9 AM, 5-7 PM on weekdays)
     const hour = start.getHours();
@@ -219,16 +221,26 @@ export default function ReservationForm({ garage, onBack, onSuccess }: Reservati
     const isPeakHour = isWeekday && ((hour >= 7 && hour < 9) || (hour >= 17 && hour < 19));
 
     if (isPeakHour) {
-      price *= 1.2; // 20% extra for peak hours
-      breakdown += ' (hora pico: +20%)';
+      const peakIncrease = price * 0.2; // 20% extra for peak hours
+      price *= 1.2;
+      breakdownLines.push(`Recargo hora pico (20%): +$${peakIncrease.toFixed(2)}`);
     }
 
     // Apply weekend pricing
     const isWeekend = start.getDay() === 0 || start.getDay() === 6;
     if (isWeekend) {
-      price *= 1.1; // 10% extra for weekends
-      breakdown += ' (fin de semana: +10%)';
+      const weekendIncrease = price * 0.1; // 10% extra for weekends
+      price *= 1.1;
+      breakdownLines.push(`Recargo fin de semana (10%): +$${weekendIncrease.toFixed(2)}`);
     }
+
+    // Apply platform service fee (15%)
+    const serviceFeeRate = 0.15;
+    const serviceFee = price * serviceFeeRate;
+    price = price * (1 + serviceFeeRate);
+    breakdownLines.push(`Costo de servicio (15%): +$${serviceFee.toFixed(2)}`);
+
+    const breakdown = breakdownLines.join('\n');
 
     return {
       price: Math.round(Math.max(0, price) * 100) / 100,
@@ -478,14 +490,38 @@ export default function ReservationForm({ garage, onBack, onSuccess }: Reservati
           {/* Price Summary */}
           {priceCalculation.price > 0 && (
             <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-700">Total a pagar</span>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-gray-700 font-medium">Total a pagar</span>
                 <span className="text-xl font-bold text-gray-900">
                   ${priceCalculation.price.toFixed(2)}
                 </span>
               </div>
-              <div className="text-xs text-gray-600">
-                {priceCalculation.breakdown}
+              <div className="space-y-1.5 pt-2 border-t border-gray-200">
+                {priceCalculation.breakdown.split('\n').map((line, index) => {
+                  if (line.includes(' = ')) {
+                    const [description, amount] = line.split(' = ');
+                    return (
+                      <div key={index} className="text-xs text-gray-600 flex justify-between items-center">
+                        <span>{description}</span>
+                        <span className="font-medium text-gray-900">{amount}</span>
+                      </div>
+                    );
+                  } else if (line.includes(': +')) {
+                    const [description, amount] = line.split(': +');
+                    return (
+                      <div key={index} className="text-xs text-gray-600 flex justify-between items-center">
+                        <span>{description}</span>
+                        <span className="font-medium text-green-600">+{amount}</span>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div key={index} className="text-xs text-gray-600">
+                        {line}
+                      </div>
+                    );
+                  }
+                })}
               </div>
             </div>
           )}

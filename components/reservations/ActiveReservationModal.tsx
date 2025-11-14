@@ -362,10 +362,6 @@ export default function ActiveReservationModal({
             </button>
           </div>
 
-          {/* Info */}
-          <p className="text-xs text-gray-500 text-center mt-4 leading-relaxed">
-            Haz check-in cuando llegues al lugar para confirmar tu presencia.
-          </p>
         </div>
       </div>
 

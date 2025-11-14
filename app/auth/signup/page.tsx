@@ -128,7 +128,7 @@ export default function SignupPage() {
                 className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
               />
               <label htmlFor="termsAccepted" className="text-sm text-gray-700">
-                Acepto los{" "}
+              He leído y acepto los {" "}
                 <Link href="#" className="text-green-600 hover:text-green-700 underline">
                   términos y condiciones
                 </Link>
@@ -187,6 +187,14 @@ export default function SignupPage() {
               </svg>
               <span className="font-medium text-gray-700">Disponible próximamente</span>
             </button>
+          </div>
+
+          {/* Sign in link */}
+          <div className="text-center">
+            <span className="text-sm text-gray-600">¿Ya tenés cuenta? </span>
+            <Link href="/auth/signin" className="text-sm text-green-600 font-medium hover:text-green-700">
+              Iniciá sesión
+            </Link>
           </div>
         </div>
       </div>

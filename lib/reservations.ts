@@ -436,42 +436,44 @@ export function calculateReservationPrice(
   const durationWeeks = durationDays / 7;
   const durationMonths = durationDays / 30; // Approximate month as 30 days
 
-  let price: number;
+  let basePrice: number;
   let pricingType: 'hourly' | 'daily' | 'monthly';
-  let breakdown: string;
+  let breakdownLines: string[] = [];
 
   // Determine pricing strategy based on duration and available prices
   if (durationHours < 24 && garage.hourlyPrice) {
     // Use hourly pricing for reservations less than 24 hours
-    price = garage.hourlyPrice * durationHours;
+    basePrice = garage.hourlyPrice * durationHours;
     pricingType = 'hourly';
-    breakdown = `${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora`;
+    breakdownLines.push(`${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora = $${basePrice.toFixed(2)}`);
   } else if (durationDays < 7 && garage.dailyPrice) {
     // Use daily pricing for reservations 1-7 days
     const days = Math.ceil(durationDays);
-    price = garage.dailyPrice * days;
+    basePrice = garage.dailyPrice * days;
     pricingType = 'daily';
-    breakdown = `${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día`;
+    breakdownLines.push(`${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día = $${basePrice.toFixed(2)}`);
   } else if (durationDays >= 7 && garage.monthlyPrice) {
     // Use monthly pricing for reservations 7+ days
     const months = Math.ceil(durationMonths);
-    price = garage.monthlyPrice * months;
+    basePrice = garage.monthlyPrice * months;
     pricingType = 'monthly';
-    breakdown = `${months} mes${months > 1 ? 'es' : ''} × $${garage.monthlyPrice}/mes`;
+    breakdownLines.push(`${months} mes${months > 1 ? 'es' : ''} × $${garage.monthlyPrice}/mes = $${basePrice.toFixed(2)}`);
   } else if (garage.dailyPrice) {
     // Fallback to daily pricing if monthly not available
     const days = Math.ceil(durationDays);
-    price = garage.dailyPrice * days;
+    basePrice = garage.dailyPrice * days;
     pricingType = 'daily';
-    breakdown = `${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día`;
+    breakdownLines.push(`${days} día${days > 1 ? 's' : ''} × $${garage.dailyPrice}/día = $${basePrice.toFixed(2)}`);
   } else if (garage.hourlyPrice) {
     // Final fallback to hourly pricing
-    price = garage.hourlyPrice * durationHours;
+    basePrice = garage.hourlyPrice * durationHours;
     pricingType = 'hourly';
-    breakdown = `${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora`;
+    breakdownLines.push(`${durationHours.toFixed(1)} horas × $${garage.hourlyPrice}/hora = $${basePrice.toFixed(2)}`);
   } else {
     throw new Error('No pricing available for this garage');
   }
+
+  let price = basePrice;
 
   // Apply peak hour pricing (7-9 AM, 5-7 PM on weekdays)
   const hour = startTime.getHours();
@@ -479,16 +481,26 @@ export function calculateReservationPrice(
   const isPeakHour = isWeekday && ((hour >= 7 && hour < 9) || (hour >= 17 && hour < 19));
 
   if (isPeakHour) {
+    const peakIncrease = price * (peakHourMultiplier - 1);
     price *= peakHourMultiplier;
-    breakdown += ` (hora pico: ×${peakHourMultiplier})`;
+    breakdownLines.push(`Recargo hora pico (${((peakHourMultiplier - 1) * 100).toFixed(0)}%): +$${peakIncrease.toFixed(2)}`);
   }
 
   // Apply weekend pricing
   const isWeekend = startTime.getDay() === 0 || startTime.getDay() === 6;
   if (isWeekend) {
+    const weekendIncrease = price * (weekendMultiplier - 1);
     price *= weekendMultiplier;
-    breakdown += ` (fin de semana: ×${weekendMultiplier})`;
+    breakdownLines.push(`Recargo fin de semana (${((weekendMultiplier - 1) * 100).toFixed(0)}%): +$${weekendIncrease.toFixed(2)}`);
   }
+
+  // Apply platform service fee (15%)
+  const serviceFeeRate = 0.15;
+  const serviceFee = price * serviceFeeRate;
+  price = price * (1 + serviceFeeRate);
+  breakdownLines.push(`Costo de servicio (15%): +$${serviceFee.toFixed(2)}`);
+
+  const breakdown = breakdownLines.join('\n');
 
   return {
     price: Math.round(price * 100) / 100, // Round to 2 decimal places

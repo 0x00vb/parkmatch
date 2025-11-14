@@ -177,7 +177,7 @@ export default function CompleteProfilePage() {
             </div>
 
             {/* Email Verification */}
-            <div className="bg-gray-50 rounded-xl p-4">
+            {/* <div className="bg-gray-50 rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <EnvelopeIcon className="w-5 h-5 text-gray-600" />
@@ -197,7 +197,7 @@ export default function CompleteProfilePage() {
                   {emailVerificationSent ? "ENVIADO" : "ENVIAR"}
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Two Factor Authentication */}
             <div className="bg-gray-50 rounded-xl p-4">
