@@ -36,10 +36,20 @@ export default function Home() {
   }, [displayText, isDeleting]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-linear-gradient(to bottom, #f0f0f0, #ffffff)">
       {/* Hero Section */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="pt-12 pb-20 md:pt-20 md:pb-28 text-center">
+      <div 
+        className="mx-auto  h-screen px-4 sm:px-6 lg:px-8 relative"
+        style={{
+          backgroundImage: 'url(/LandingHero.webp)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-white/80"></div>
+        <div className="relative z-10 pt-12 pb-20 md:pt-20 md:pb-28 text-center">
           {/* Logo and Header */}
           <div className="flex items-center justify-center mb-8">
             <img
@@ -83,7 +93,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Stats Section */}
+      {/* Stats Section
       <div className="bg-white py-12 border-y border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -105,7 +115,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Features Section */}
       <div className="py-20 bg-white">
@@ -121,7 +131,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Feature 1 */}
-            <div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-linear-to-br from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
               <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
                 <MapPinIcon className="w-7 h-7 text-green-600" />
               </div>
@@ -132,7 +142,7 @@ export default function Home() {
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-linear-to-br from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
               <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
                 <CurrencyDollarIcon className="w-7 h-7 text-green-600" />
               </div>
@@ -143,7 +153,7 @@ export default function Home() {
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-linear-to-br from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
               <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
                 <ClockIcon className="w-7 h-7 text-green-600" />
               </div>
@@ -154,7 +164,7 @@ export default function Home() {
             </div>
 
             {/* Feature 4 */}
-            <div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-linear-to-br from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
               <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
                 <ShieldCheckIcon className="w-7 h-7 text-green-600" />
               </div>
@@ -168,7 +178,7 @@ export default function Home() {
       </div>
 
       {/* Value Proposition Section */}
-      <div className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+      <div className="py-20 bg-linear-to-br from-green-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -208,45 +218,14 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="relative">
-              <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-200">
-                <div className="bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl h-80 overflow-hidden relative">
-                  {/* Street Image with Enhanced Design */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 flex items-end justify-center p-6">
-                    <div className="text-center w-full">
-                      {/* Street Illustration */}
-                      <div className="w-full h-64 bg-gradient-to-r from-amber-300 via-orange-300 to-amber-300 rounded-xl mb-4 relative shadow-lg">
-                        <div className="absolute inset-0 bg-gradient-to-b from-yellow-200/50 to-orange-400/30 rounded-xl"></div>
-                        
-                        {/* Road markings */}
-                        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gray-700/20 rounded-b-xl"></div>
-                        <div className="absolute bottom-4 left-4 right-4 flex justify-center">
-                          <div className="flex space-x-8">
-                            <div className="w-8 h-1 bg-yellow-300/80 rounded"></div>
-                            <div className="w-8 h-1 bg-yellow-300/80 rounded"></div>
-                            <div className="w-8 h-1 bg-yellow-300/80 rounded"></div>
-                          </div>
-                        </div>
-                        
-                        {/* Parking spaces */}
-                        <div className="absolute top-8 left-4 right-4 flex justify-between">
-                          <div className="w-16 h-24 border-2 border-white/60 border-dashed rounded-lg flex items-center justify-center">
-                            <div className="text-white text-xs font-bold">C1</div>
-                          </div>
-                          <div className="w-16 h-24 border-2 border-white/60 border-dashed rounded-lg flex items-center justify-center">
-                            <div className="text-white text-xs font-bold">C2</div>
-                          </div>
-                          <div className="w-16 h-24 border-2 border-white/60 border-dashed rounded-lg flex items-center justify-center">
-                            <div className="text-white text-xs font-bold">C3</div>
-                          </div>
-                        </div>
-                        
-                        {/* Car illustrations */}
-                        <div className="absolute bottom-12 left-6 w-12 h-6 bg-red-500 rounded-sm"></div>
-                        <div className="absolute bottom-12 right-10 w-12 h-6 bg-blue-500 rounded-sm"></div>
-                      </div>
-                    </div>
-                  </div>
+            <div className="relative hidden sm:block ">
+              <div className="bg-white rounded-3xl p-3 shadow-xl border border-gray-200">
+                <div className="rounded-sm h-80 overflow-hidden relative p-2">
+                  <img
+                    src="/LandingDemo.webp"
+                    alt="Match Demo"
+                    className="w-full h-full object-fill rounded-2xl"
+                  />
                 </div>
               </div>
             </div>

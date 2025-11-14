@@ -11,6 +11,9 @@ import { z } from "zod";
 const signupSchema = z.object({
   email: z.string().email("Ingresa un email válido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "Debes aceptar los términos y condiciones",
+  }),
 });
 
 type SignupForm = z.infer<typeof signupSchema>;
@@ -25,6 +28,9 @@ export default function SignupPage() {
     formState: { errors },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
+    defaultValues: {
+      termsAccepted: false,
+    },
   });
 
   const onSubmit = async (data: SignupForm) => {
@@ -113,6 +119,24 @@ export default function SignupPage() {
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
+
+            <div className="flex items-start gap-2">
+              <input
+                {...register("termsAccepted")}
+                type="checkbox"
+                id="termsAccepted"
+                className="mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+              />
+              <label htmlFor="termsAccepted" className="text-sm text-gray-700">
+                Acepto los{" "}
+                <Link href="#" className="text-green-600 hover:text-green-700 underline">
+                  términos y condiciones
+                </Link>
+              </label>
+            </div>
+            {errors.termsAccepted && (
+              <p className="text-red-500 text-sm mt-1">{errors.termsAccepted.message}</p>
+            )}
 
             <button
               type="submit"
