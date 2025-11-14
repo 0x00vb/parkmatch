@@ -266,7 +266,7 @@ export default function GaragesSection() {
                   {/* Address and Rating */}
                   <div className="mb-3">
                     <h3 className="font-semibold text-gray-900 text-base mb-1">
-                      {garage.address.split(',')[0]}
+                      {garage.address.split(',').slice(0, 4).join(', ')}
                     </h3>
                     <p className="text-sm text-gray-600 mb-2">
                       {getTypeLabel(garage.type)}
