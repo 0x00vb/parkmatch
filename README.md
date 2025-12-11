@@ -69,7 +69,7 @@ Match es una aplicación web moderna para conectar conductores con propietarios 
 ### 1. Clonar el repositorio
 ```bash
 git clone <repository-url>
-cd Match
+cd match-ar
 ```
 
 ### 2. Instalar dependencias
